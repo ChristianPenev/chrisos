@@ -15,7 +15,7 @@ import (
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/user"
 )
 
-func newTestRepo(t *testing.T) *UserRepository {
+func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
 	dsn := os.Getenv("TEST_DATABASE_URL")
@@ -40,7 +40,7 @@ func newTestRepo(t *testing.T) *UserRepository {
 		t.Fatal(err)
 	}
 
-	return NewUserRepository(db)
+	return db
 }
 
 func newUser(t *testing.T, rawEmail string) *user.User {
@@ -69,7 +69,7 @@ func assertSameUser(t *testing.T, got, want *user.User) {
 
 func TestUserRepository(t *testing.T) {
 	ctx := context.Background()
-	repo := newTestRepo(t)
+	repo := NewUserRepository(newTestDB(t))
 	jane := newUser(t, "jane@example.com")
 
 	if err := repo.Create(ctx, jane); err != nil {
