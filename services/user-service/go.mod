@@ -2,7 +2,10 @@ module github.com/ChristianPenev/chrisos/services/user-service
 
 go 1.27.3
 
-require github.com/ChristianPenev/chrisos/pkg v0.0.0
+require (
+	github.com/ChristianPenev/chrisos/pkg v0.0.0
+	github.com/google/uuid v1.6.0
+)
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
