@@ -39,6 +39,16 @@ func NewUser(email Email, firstName, lastName string) (*User, error) {
 	}, nil
 }
 
+func Rehydrate(id ID, email, firstName, lastName string, createdAt time.Time) *User {
+	return &User{
+		id:        id,
+		email:     Email{value: email},
+		firstName: firstName,
+		lastName:  lastName,
+		createdAt: createdAt.UTC(),
+	}
+}
+
 func (u *User) ID() ID               { return u.id }
 func (u *User) Email() Email         { return u.email }
 func (u *User) FirstName() string    { return u.firstName }

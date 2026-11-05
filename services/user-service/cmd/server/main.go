@@ -10,6 +10,7 @@ import (
 
 	"github.com/ChristianPenev/chrisos/pkg/httpserver"
 	"github.com/ChristianPenev/chrisos/pkg/postgres"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/postgres/migrations"
 )
 
 func main() {
@@ -40,6 +41,10 @@ func run() error {
 	defer sqlDB.Close()
 
 	log.Println("Connected to PostgreSQL")
+
+	if err := postgres.Migrate(ctx, sqlDB, migrations.FS); err != nil {
+		return err
+	}
 
 	mux := http.NewServeMux()
 
