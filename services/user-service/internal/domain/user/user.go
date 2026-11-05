@@ -17,7 +17,6 @@ type User struct {
 	createdAt time.Time
 }
 
-
 func NewUser(email Email, firstName, lastName string) (*User, error) {
 	first, err := normalizeName(firstName)
 	if err != nil {

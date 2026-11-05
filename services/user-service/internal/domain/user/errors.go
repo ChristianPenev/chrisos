@@ -7,4 +7,7 @@ var (
 	ErrInvalidEmail     = errors.New("invalid email")
 	ErrInvalidFirstName = errors.New("invalid first name")
 	ErrInvalidLastName  = errors.New("invalid last name")
+
+	ErrUserNotFound       = errors.New("user not found")
+	ErrEmailAlreadyExists = errors.New("email already exists")
 )

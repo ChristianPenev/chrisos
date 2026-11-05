@@ -6,14 +6,11 @@ import (
 	"strings"
 )
 
-
 const maxEmailLength = 254
-
 
 type Email struct {
 	value string
 }
-
 
 func NewEmail(raw string) (Email, error) {
 	normalized := strings.ToLower(strings.TrimSpace(raw))
