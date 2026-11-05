@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: user-service
+    labels:
+        app: user-service
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: user-service
+    template:
+        metadata:
+            labels:
+                app: user-service
+        spec:
+            containers:
+                - name: user-service
+                  image: chrisos/user-service:0.0.1
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                      - containerPort: 8080
+                  readinessProbe:
+                      httpGet:
+                          path: /health
+                          port: 8080
+                      initialDelaySeconds: 2
+                      periodSeconds: 5
+                  livenessProbe:
+                      httpGet:
+                          path: /health
+                          port: 8080
+                      initialDelaySeconds: 5
+                      periodSeconds: 10
+                  env:
+                      - name: DB_HOST
+                        value: postgres
+                      - name: DB_USER
+                        value: chrisos
+                      - name: DB_NAME
+                        value: users_db
+                      - name: DB_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: postgres-credentials
+                                key: password
