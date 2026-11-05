@@ -1,12 +1,21 @@
+# Build context: repo root (see Tiltfile), so the shared ./pkg module is visible.
 FROM golang:1.27.3-alpine AS builder
 
-WORKDIR /app
+# Each service builds standalone via the `replace` in its go.mod;
+# go.work is for local dev only.
+ENV GOWORK=off
 
-COPY go.mod go.sum ./
+WORKDIR /src
+
+# Module files first so `go mod download` is cached until dependencies change.
+COPY pkg/go.mod pkg/go.sum ./pkg/
+COPY services/user-service/go.mod services/user-service/go.sum ./services/user-service/
+
+WORKDIR /src/services/user-service
 RUN go mod download
 
-COPY cmd/ ./cmd/
-COPY internal/ ./internal/
+COPY pkg/ /src/pkg/
+COPY services/user-service/ ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -o /user-service ./cmd/server

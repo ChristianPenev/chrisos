@@ -1,11 +1,8 @@
-module github.com/ChristianPenev/chrisos/services/user
+module github.com/ChristianPenev/chrisos/services/user-service
 
 go 1.27.3
 
-require (
-	gorm.io/driver/postgres v1.6.3
-	gorm.io/gorm v1.31.2
-)
+require github.com/ChristianPenev/chrisos/pkg v0.0.0
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -16,4 +13,8 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
+	gorm.io/driver/postgres v1.6.3 // indirect
+	gorm.io/gorm v1.31.2 // indirect
 )
+
+replace github.com/ChristianPenev/chrisos/pkg => ../../pkg
