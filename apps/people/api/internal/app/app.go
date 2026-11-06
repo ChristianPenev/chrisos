@@ -10,12 +10,21 @@ func New(users UserService) *Application {
 	return &Application{users: users}
 }
 
-func (a *Application) RegisterUser(ctx context.Context, in RegisterUserInput) (*User, error) {
-	id, err := a.users.RegisterUser(ctx, in)
+type CreateOrganizationPayload struct {
+	OrganizationID string
+	Owner          *User
+}
+
+func (a *Application) CreateOrganization(ctx context.Context, in CreateOrganizationInput) (*CreateOrganizationPayload, error) {
+	created, err := a.users.CreateOrganization(ctx, in)
 	if err != nil {
 		return nil, err
 	}
-	return a.users.GetUser(ctx, id)
+	owner, err := a.users.GetUser(ctx, created.OwnerUserID)
+	if err != nil {
+		return nil, err
+	}
+	return &CreateOrganizationPayload{OrganizationID: created.OrganizationID, Owner: owner}, nil
 }
 
 func (a *Application) GetUser(ctx context.Context, id string) (*User, error) {

@@ -23,14 +23,16 @@ const (
 )
 
 type User struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	FirstName     string                 `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName      string                 `protobuf:"bytes,4,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Email          string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName      string                 `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName       string                 `protobuf:"bytes,4,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,6,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	RoleId         string                 `protobuf:"bytes,7,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
@@ -98,29 +100,44 @@ func (x *User) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-type RegisterUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName      string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x *User) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
 }
 
-func (x *RegisterUserRequest) Reset() {
-	*x = RegisterUserRequest{}
+func (x *User) GetRoleId() string {
+	if x != nil {
+		return x.RoleId
+	}
+	return ""
+}
+
+type CreateOrganizationRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	OrganizationName string                 `protobuf:"bytes,1,opt,name=organization_name,json=organizationName,proto3" json:"organization_name,omitempty"`
+	OwnerEmail       string                 `protobuf:"bytes,2,opt,name=owner_email,json=ownerEmail,proto3" json:"owner_email,omitempty"`
+	OwnerFirstName   string                 `protobuf:"bytes,3,opt,name=owner_first_name,json=ownerFirstName,proto3" json:"owner_first_name,omitempty"`
+	OwnerLastName    string                 `protobuf:"bytes,4,opt,name=owner_last_name,json=ownerLastName,proto3" json:"owner_last_name,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CreateOrganizationRequest) Reset() {
+	*x = CreateOrganizationRequest{}
 	mi := &file_user_v1_user_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegisterUserRequest) String() string {
+func (x *CreateOrganizationRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegisterUserRequest) ProtoMessage() {}
+func (*CreateOrganizationRequest) ProtoMessage() {}
 
-func (x *RegisterUserRequest) ProtoReflect() protoreflect.Message {
+func (x *CreateOrganizationRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_user_v1_user_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -132,53 +149,61 @@ func (x *RegisterUserRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RegisterUserRequest.ProtoReflect.Descriptor instead.
-func (*RegisterUserRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateOrganizationRequest.ProtoReflect.Descriptor instead.
+func (*CreateOrganizationRequest) Descriptor() ([]byte, []int) {
 	return file_user_v1_user_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *RegisterUserRequest) GetEmail() string {
+func (x *CreateOrganizationRequest) GetOrganizationName() string {
 	if x != nil {
-		return x.Email
+		return x.OrganizationName
 	}
 	return ""
 }
 
-func (x *RegisterUserRequest) GetFirstName() string {
+func (x *CreateOrganizationRequest) GetOwnerEmail() string {
 	if x != nil {
-		return x.FirstName
+		return x.OwnerEmail
 	}
 	return ""
 }
 
-func (x *RegisterUserRequest) GetLastName() string {
+func (x *CreateOrganizationRequest) GetOwnerFirstName() string {
 	if x != nil {
-		return x.LastName
+		return x.OwnerFirstName
 	}
 	return ""
 }
 
-type RegisterUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x *CreateOrganizationRequest) GetOwnerLastName() string {
+	if x != nil {
+		return x.OwnerLastName
+	}
+	return ""
 }
 
-func (x *RegisterUserResponse) Reset() {
-	*x = RegisterUserResponse{}
+type CreateOrganizationResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	OrganizationId string                 `protobuf:"bytes,1,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	OwnerUserId    string                 `protobuf:"bytes,2,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CreateOrganizationResponse) Reset() {
+	*x = CreateOrganizationResponse{}
 	mi := &file_user_v1_user_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegisterUserResponse) String() string {
+func (x *CreateOrganizationResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegisterUserResponse) ProtoMessage() {}
+func (*CreateOrganizationResponse) ProtoMessage() {}
 
-func (x *RegisterUserResponse) ProtoReflect() protoreflect.Message {
+func (x *CreateOrganizationResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_user_v1_user_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -190,14 +215,21 @@ func (x *RegisterUserResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RegisterUserResponse.ProtoReflect.Descriptor instead.
-func (*RegisterUserResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateOrganizationResponse.ProtoReflect.Descriptor instead.
+func (*CreateOrganizationResponse) Descriptor() ([]byte, []int) {
 	return file_user_v1_user_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *RegisterUserResponse) GetId() string {
+func (x *CreateOrganizationResponse) GetOrganizationId() string {
 	if x != nil {
-		return x.Id
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *CreateOrganizationResponse) GetOwnerUserId() string {
+	if x != nil {
+		return x.OwnerUserId
 	}
 	return ""
 }
@@ -294,7 +326,7 @@ var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x12user/v1/user.proto\x12\auser.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa3\x01\n" +
+	"\x12user/v1/user.proto\x12\auser.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe5\x01\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1d\n" +
@@ -302,20 +334,24 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"first_name\x18\x03 \x01(\tR\tfirstName\x12\x1b\n" +
 	"\tlast_name\x18\x04 \x01(\tR\blastName\x129\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"g\n" +
-	"\x13RegisterUserRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
-	"\n" +
-	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\x03 \x01(\tR\blastName\"&\n" +
-	"\x14RegisterUserResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\" \n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12'\n" +
+	"\x0forganization_id\x18\x06 \x01(\tR\x0eorganizationId\x12\x17\n" +
+	"\arole_id\x18\a \x01(\tR\x06roleId\"\xbb\x01\n" +
+	"\x19CreateOrganizationRequest\x12+\n" +
+	"\x11organization_name\x18\x01 \x01(\tR\x10organizationName\x12\x1f\n" +
+	"\vowner_email\x18\x02 \x01(\tR\n" +
+	"ownerEmail\x12(\n" +
+	"\x10owner_first_name\x18\x03 \x01(\tR\x0eownerFirstName\x12&\n" +
+	"\x0fowner_last_name\x18\x04 \x01(\tR\rownerLastName\"i\n" +
+	"\x1aCreateOrganizationResponse\x12'\n" +
+	"\x0forganization_id\x18\x01 \x01(\tR\x0eorganizationId\x12\"\n" +
+	"\rowner_user_id\x18\x02 \x01(\tR\vownerUserId\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"4\n" +
 	"\x0fGetUserResponse\x12!\n" +
-	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user2\x98\x01\n" +
-	"\vUserService\x12K\n" +
-	"\fRegisterUser\x12\x1c.user.v1.RegisterUserRequest\x1a\x1d.user.v1.RegisterUserResponse\x12<\n" +
+	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user2\xaa\x01\n" +
+	"\vUserService\x12]\n" +
+	"\x12CreateOrganization\x12\".user.v1.CreateOrganizationRequest\x1a#.user.v1.CreateOrganizationResponse\x12<\n" +
 	"\aGetUser\x12\x17.user.v1.GetUserRequest\x1a\x18.user.v1.GetUserResponseB9Z7github.com/ChristianPenev/chrisos/gen/go/user/v1;userv1b\x06proto3"
 
 var (
@@ -332,19 +368,19 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 
 var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_user_v1_user_proto_goTypes = []any{
-	(*User)(nil),                  // 0: user.v1.User
-	(*RegisterUserRequest)(nil),   // 1: user.v1.RegisterUserRequest
-	(*RegisterUserResponse)(nil),  // 2: user.v1.RegisterUserResponse
-	(*GetUserRequest)(nil),        // 3: user.v1.GetUserRequest
-	(*GetUserResponse)(nil),       // 4: user.v1.GetUserResponse
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*User)(nil),                       // 0: user.v1.User
+	(*CreateOrganizationRequest)(nil),  // 1: user.v1.CreateOrganizationRequest
+	(*CreateOrganizationResponse)(nil), // 2: user.v1.CreateOrganizationResponse
+	(*GetUserRequest)(nil),             // 3: user.v1.GetUserRequest
+	(*GetUserResponse)(nil),            // 4: user.v1.GetUserResponse
+	(*timestamppb.Timestamp)(nil),      // 5: google.protobuf.Timestamp
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	5, // 0: user.v1.User.created_at:type_name -> google.protobuf.Timestamp
 	0, // 1: user.v1.GetUserResponse.user:type_name -> user.v1.User
-	1, // 2: user.v1.UserService.RegisterUser:input_type -> user.v1.RegisterUserRequest
+	1, // 2: user.v1.UserService.CreateOrganization:input_type -> user.v1.CreateOrganizationRequest
 	3, // 3: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
-	2, // 4: user.v1.UserService.RegisterUser:output_type -> user.v1.RegisterUserResponse
+	2, // 4: user.v1.UserService.CreateOrganization:output_type -> user.v1.CreateOrganizationResponse
 	4, // 5: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
 	4, // [4:6] is the sub-list for method output_type
 	2, // [2:4] is the sub-list for method input_type

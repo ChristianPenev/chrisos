@@ -32,10 +32,12 @@ func (r *UserReader) UserByID(ctx context.Context, id user.ID) (query.UserView, 
 	}
 
 	return query.UserView{
-		ID:        rec.ID.String(),
-		Email:     rec.Email,
-		FirstName: rec.FirstName,
-		LastName:  rec.LastName,
-		CreatedAt: rec.CreatedAt.UTC(),
+		ID:             rec.ID.String(),
+		OrganizationID: rec.OrganizationID.String(),
+		RoleID:         rec.RoleID.String(),
+		Email:          rec.Email,
+		FirstName:      rec.FirstName,
+		LastName:       rec.LastName,
+		CreatedAt:      rec.CreatedAt.UTC(),
 	}, nil
 }

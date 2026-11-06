@@ -11,13 +11,19 @@ var (
 	ErrEmailAlreadyExists = errors.New("email already exists")
 )
 
-type RegisterUserInput struct {
-	Email     string
-	FirstName string
-	LastName  string
+type CreateOrganizationInput struct {
+	Name           string
+	OwnerEmail     string
+	OwnerFirstName string
+	OwnerLastName  string
+}
+
+type CreatedOrganization struct {
+	OrganizationID string
+	OwnerUserID    string
 }
 
 type UserService interface {
-	RegisterUser(ctx context.Context, in RegisterUserInput) (string, error)
+	CreateOrganization(ctx context.Context, in CreateOrganizationInput) (CreatedOrganization, error)
 	GetUser(ctx context.Context, id string) (*User, error)
 }

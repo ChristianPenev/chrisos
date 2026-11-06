@@ -22,15 +22,15 @@ type fakeUserService struct {
 	userv1.UnimplementedUserServiceServer
 	err   error
 	delay time.Duration
-	got   *userv1.RegisterUserRequest
+	got   *userv1.CreateOrganizationRequest
 }
 
-func (f *fakeUserService) RegisterUser(ctx context.Context, req *userv1.RegisterUserRequest) (*userv1.RegisterUserResponse, error) {
+func (f *fakeUserService) CreateOrganization(ctx context.Context, req *userv1.CreateOrganizationRequest) (*userv1.CreateOrganizationResponse, error) {
 	f.got = req
 	if f.err != nil {
 		return nil, f.err
 	}
-	return &userv1.RegisterUserResponse{Id: "user-1"}, nil
+	return &userv1.CreateOrganizationResponse{OrganizationId: "org-1", OwnerUserId: "user-1"}, nil
 }
 
 func (f *fakeUserService) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*userv1.GetUserResponse, error) {
@@ -43,11 +43,13 @@ func (f *fakeUserService) GetUser(ctx context.Context, req *userv1.GetUserReques
 		return nil, f.err
 	}
 	return &userv1.GetUserResponse{User: &userv1.User{
-		Id:        req.GetId(),
-		Email:     "jane@example.com",
-		FirstName: "Jane",
-		LastName:  "Doe",
-		CreatedAt: timestamppb.New(time.Date(2026, 11, 6, 10, 0, 0, 0, time.UTC)),
+		Id:             req.GetId(),
+		OrganizationId: "org-1",
+		RoleId:         "role-1",
+		Email:          "jane@example.com",
+		FirstName:      "Jane",
+		LastName:       "Doe",
+		CreatedAt:      timestamppb.New(time.Date(2026, 11, 6, 10, 0, 0, 0, time.UTC)),
 	}}, nil
 }
 
@@ -72,18 +74,19 @@ func newTestClient(t *testing.T, fake *fakeUserService) *Client {
 	return NewClient(conn)
 }
 
-func TestRegisterUser(t *testing.T) {
+func TestCreateOrganization(t *testing.T) {
 	fake := &fakeUserService{}
-	id, err := newTestClient(t, fake).RegisterUser(context.Background(), app.RegisterUserInput{
-		Email: "jane@example.com", FirstName: "Jane", LastName: "Doe",
+	got, err := newTestClient(t, fake).CreateOrganization(context.Background(), app.CreateOrganizationInput{
+		Name: "Acme", OwnerEmail: "jane@example.com", OwnerFirstName: "Jane", OwnerLastName: "Doe",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id != "user-1" {
-		t.Errorf("got id %q", id)
+	if got != (app.CreatedOrganization{OrganizationID: "org-1", OwnerUserID: "user-1"}) {
+		t.Errorf("got %+v", got)
 	}
-	if fake.got.GetEmail() != "jane@example.com" || fake.got.GetFirstName() != "Jane" || fake.got.GetLastName() != "Doe" {
+	if fake.got.GetOrganizationName() != "Acme" || fake.got.GetOwnerEmail() != "jane@example.com" ||
+		fake.got.GetOwnerFirstName() != "Jane" || fake.got.GetOwnerLastName() != "Doe" {
 		t.Errorf("request not mapped: %+v", fake.got)
 	}
 }
@@ -94,7 +97,8 @@ func TestGetUser(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := app.User{
-		ID: "user-1", Email: "jane@example.com", FirstName: "Jane", LastName: "Doe",
+		ID: "user-1", OrganizationID: "org-1", RoleID: "role-1",
+		Email: "jane@example.com", FirstName: "Jane", LastName: "Doe",
 		CreatedAt: time.Date(2026, 11, 6, 10, 0, 0, 0, time.UTC),
 	}
 	if *u != want {

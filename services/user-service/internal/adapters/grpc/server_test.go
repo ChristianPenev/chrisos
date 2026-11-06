@@ -16,37 +16,105 @@ import (
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/command"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/query"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/organization"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/role"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/user"
 )
 
 type memoryStore struct {
+	orgs      map[organization.ID]*organization.Organization
+	roles     map[role.ID]*role.Role
 	users     map[user.ID]*user.User
 	createErr error
 }
 
-func (m *memoryStore) Create(_ context.Context, u *user.User) error {
-	if m.createErr != nil {
-		return m.createErr
+func newMemoryStore() *memoryStore {
+	return &memoryStore{
+		orgs:  map[organization.ID]*organization.Organization{},
+		roles: map[role.ID]*role.Role{},
+		users: map[user.ID]*user.User{},
 	}
-	for _, existing := range m.users {
+}
+
+func (m *memoryStore) WithinTransaction(_ context.Context, fn func(command.Repositories) error) error {
+	return fn(command.Repositories{
+		Organizations: memoryOrganizations{m},
+		Roles:         memoryRoles{m},
+		Users:         memoryUsers{m},
+	})
+}
+
+func (m *memoryStore) UserByID(_ context.Context, id user.ID) (query.UserView, error) {
+	u, ok := m.users[id]
+	if !ok {
+		return query.UserView{}, user.ErrUserNotFound
+	}
+	return query.UserView{
+		ID:             u.ID().String(),
+		OrganizationID: u.OrganizationID().String(),
+		RoleID:         u.RoleID().String(),
+		Email:          u.Email().String(),
+		FirstName:      u.FirstName(),
+		LastName:       u.LastName(),
+		CreatedAt:      u.CreatedAt(),
+	}, nil
+}
+
+type memoryOrganizations struct{ m *memoryStore }
+
+func (r memoryOrganizations) Create(_ context.Context, o *organization.Organization) error {
+	r.m.orgs[o.ID()] = o
+	return nil
+}
+
+func (r memoryOrganizations) FindByID(_ context.Context, id organization.ID) (*organization.Organization, error) {
+	o, ok := r.m.orgs[id]
+	if !ok {
+		return nil, organization.ErrOrganizationNotFound
+	}
+	return o, nil
+}
+
+type memoryRoles struct{ m *memoryStore }
+
+func (r memoryRoles) Create(_ context.Context, ro *role.Role) error {
+	r.m.roles[ro.ID()] = ro
+	return nil
+}
+
+func (r memoryRoles) FindByID(_ context.Context, id role.ID) (*role.Role, error) {
+	ro, ok := r.m.roles[id]
+	if !ok {
+		return nil, role.ErrRoleNotFound
+	}
+	return ro, nil
+}
+
+type memoryUsers struct{ m *memoryStore }
+
+func (r memoryUsers) Create(_ context.Context, u *user.User) error {
+	if r.m.createErr != nil {
+		return r.m.createErr
+	}
+	for _, existing := range r.m.users {
 		if existing.Email() == u.Email() {
 			return user.ErrEmailAlreadyExists
 		}
 	}
-	m.users[u.ID()] = u
+	r.m.users[u.ID()] = u
 	return nil
 }
 
-func (m *memoryStore) FindByID(_ context.Context, id user.ID) (*user.User, error) {
-	u, ok := m.users[id]
+func (r memoryUsers) FindByID(_ context.Context, id user.ID) (*user.User, error) {
+	u, ok := r.m.users[id]
 	if !ok {
 		return nil, user.ErrUserNotFound
 	}
 	return u, nil
 }
 
-func (m *memoryStore) FindByEmail(_ context.Context, email user.Email) (*user.User, error) {
-	for _, u := range m.users {
+func (r memoryUsers) FindByEmail(_ context.Context, email user.Email) (*user.User, error) {
+	for _, u := range r.m.users {
 		if u.Email() == email {
 			return u, nil
 		}
@@ -54,25 +122,11 @@ func (m *memoryStore) FindByEmail(_ context.Context, email user.Email) (*user.Us
 	return nil, user.ErrUserNotFound
 }
 
-func (m *memoryStore) UserByID(ctx context.Context, id user.ID) (query.UserView, error) {
-	u, err := m.FindByID(ctx, id)
-	if err != nil {
-		return query.UserView{}, err
-	}
-	return query.UserView{
-		ID:        u.ID().String(),
-		Email:     u.Email().String(),
-		FirstName: u.FirstName(),
-		LastName:  u.LastName(),
-		CreatedAt: u.CreatedAt(),
-	}, nil
-}
-
 func newTestClient(t *testing.T, store *memoryStore) userv1.UserServiceClient {
 	t.Helper()
 
 	app := application.Application{
-		Commands: application.Commands{RegisterUser: command.NewRegisterUserHandler(store)},
+		Commands: application.Commands{CreateOrganization: command.NewCreateOrganizationHandler(store)},
 		Queries:  application.Queries{GetUser: query.NewGetUserHandler(store)},
 	}
 
@@ -103,37 +157,56 @@ func assertCode(t *testing.T, err error, want codes.Code) {
 
 func TestUserServiceServer(t *testing.T) {
 	ctx := context.Background()
-	client := newTestClient(t, &memoryStore{users: map[user.ID]*user.User{}})
+	store := newMemoryStore()
+	client := newTestClient(t, store)
 
-	reg, err := client.RegisterUser(ctx, &userv1.RegisterUserRequest{
-		Email: "Jane@Example.com", FirstName: "Jane", LastName: "Doe",
+	created, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+		OrganizationName: "Acme", OwnerEmail: "Jane@Example.com", OwnerFirstName: "Jane", OwnerLastName: "Doe",
 	})
 	if err != nil {
-		t.Fatalf("RegisterUser: %v", err)
+		t.Fatalf("CreateOrganization: %v", err)
 	}
 
-	t.Run("GetUser returns the registered user", func(t *testing.T) {
-		resp, err := client.GetUser(ctx, &userv1.GetUserRequest{Id: reg.GetId()})
+	t.Run("GetUser returns the owner in the new organization", func(t *testing.T) {
+		resp, err := client.GetUser(ctx, &userv1.GetUserRequest{Id: created.GetOwnerUserId()})
 		if err != nil {
 			t.Fatal(err)
 		}
 		u := resp.GetUser()
-		if u.GetId() != reg.GetId() || u.GetEmail() != "jane@example.com" ||
+		if u.GetId() != created.GetOwnerUserId() || u.GetEmail() != "jane@example.com" ||
 			u.GetFirstName() != "Jane" || u.GetLastName() != "Doe" || u.GetCreatedAt().AsTime().IsZero() {
 			t.Fatalf("got %+v", u)
 		}
+		if u.GetOrganizationId() != created.GetOrganizationId() {
+			t.Errorf("organization_id = %q, want %q", u.GetOrganizationId(), created.GetOrganizationId())
+		}
+
+		roleID, err := role.ParseID(u.GetRoleId())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if r, ok := store.roles[roleID]; !ok || !r.IsOwner() {
+			t.Errorf("role_id %q is not the owner role", u.GetRoleId())
+		}
 	})
 
-	t.Run("RegisterUser with taken email is AlreadyExists", func(t *testing.T) {
-		_, err := client.RegisterUser(ctx, &userv1.RegisterUserRequest{
-			Email: "jane@example.com", FirstName: "Jane", LastName: "Doe",
+	t.Run("CreateOrganization with taken email is AlreadyExists", func(t *testing.T) {
+		_, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+			OrganizationName: "Globex", OwnerEmail: "jane@example.com", OwnerFirstName: "Jane", OwnerLastName: "Doe",
 		})
 		assertCode(t, err, codes.AlreadyExists)
 	})
 
-	t.Run("RegisterUser with invalid email is InvalidArgument", func(t *testing.T) {
-		_, err := client.RegisterUser(ctx, &userv1.RegisterUserRequest{
-			Email: "nope", FirstName: "Jane", LastName: "Doe",
+	t.Run("CreateOrganization with invalid email is InvalidArgument", func(t *testing.T) {
+		_, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+			OrganizationName: "Globex", OwnerEmail: "nope", OwnerFirstName: "Jane", OwnerLastName: "Doe",
+		})
+		assertCode(t, err, codes.InvalidArgument)
+	})
+
+	t.Run("CreateOrganization with empty name is InvalidArgument", func(t *testing.T) {
+		_, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+			OrganizationName: " ", OwnerEmail: "john@example.com", OwnerFirstName: "John", OwnerLastName: "Doe",
 		})
 		assertCode(t, err, codes.InvalidArgument)
 	})
@@ -150,13 +223,12 @@ func TestUserServiceServer(t *testing.T) {
 }
 
 func TestUnexpectedErrorsAreHidden(t *testing.T) {
-	client := newTestClient(t, &memoryStore{
-		users:     map[user.ID]*user.User{},
-		createErr: errors.New("connection refused to db-host:5432"),
-	})
+	store := newMemoryStore()
+	store.createErr = errors.New("connection refused to db-host:5432")
+	client := newTestClient(t, store)
 
-	_, err := client.RegisterUser(context.Background(), &userv1.RegisterUserRequest{
-		Email: "jane@example.com", FirstName: "Jane", LastName: "Doe",
+	_, err := client.CreateOrganization(context.Background(), &userv1.CreateOrganizationRequest{
+		OrganizationName: "Acme", OwnerEmail: "jane@example.com", OwnerFirstName: "Jane", OwnerLastName: "Doe",
 	})
 	assertCode(t, err, codes.Internal)
 	if msg := status.Convert(err).Message(); msg != "internal error" {

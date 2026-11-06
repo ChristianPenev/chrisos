@@ -7,7 +7,7 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/ChristianPenev/chrisos/gen/go/user/v1;userv1";
 
 service UserService {
-  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
+  rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
 }
 
@@ -17,16 +17,20 @@ message User {
   string first_name = 3;
   string last_name = 4;
   google.protobuf.Timestamp created_at = 5;
+  string organization_id = 6;
+  string role_id = 7;
 }
 
-message RegisterUserRequest {
-  string email = 1;
-  string first_name = 2;
-  string last_name = 3;
+message CreateOrganizationRequest {
+  string organization_name = 1;
+  string owner_email = 2;
+  string owner_first_name = 3;
+  string owner_last_name = 4;
 }
 
-message RegisterUserResponse {
-  string id = 1;
+message CreateOrganizationResponse {
+  string organization_id = 1;
+  string owner_user_id = 2;
 }
 
 message GetUserRequest {

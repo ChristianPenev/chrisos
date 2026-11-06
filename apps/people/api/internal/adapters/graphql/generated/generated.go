@@ -36,8 +36,13 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	CreateOrganizationPayload struct {
+		OrganizationID func(childComplexity int) int
+		Owner          func(childComplexity int) int
+	}
+
 	Mutation struct {
-		RegisterUser func(childComplexity int, input app.RegisterUserInput) int
+		CreateOrganization func(childComplexity int, input app.CreateOrganizationInput) int
 	}
 
 	Query struct {
@@ -45,11 +50,13 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		CreatedAt func(childComplexity int) int
-		Email     func(childComplexity int) int
-		FirstName func(childComplexity int) int
-		ID        func(childComplexity int) int
-		LastName  func(childComplexity int) int
+		CreatedAt      func(childComplexity int) int
+		Email          func(childComplexity int) int
+		FirstName      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		LastName       func(childComplexity int) int
+		OrganizationID func(childComplexity int) int
+		RoleID         func(childComplexity int) int
 	}
 }
 
@@ -58,7 +65,7 @@ type ComplexityRoot struct {
 // region    ************************** generated!.gotpl **************************
 
 type MutationResolver interface {
-	RegisterUser(ctx context.Context, input app.RegisterUserInput) (*app.User, error)
+	CreateOrganization(ctx context.Context, input app.CreateOrganizationInput) (*app.CreateOrganizationPayload, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id string) (*app.User, error)
@@ -82,17 +89,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Mutation.registerUser":
-		if e.ComplexityRoot.Mutation.RegisterUser == nil {
+	case "CreateOrganizationPayload.organizationId":
+		if e.ComplexityRoot.CreateOrganizationPayload.OrganizationID == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_registerUser_args(ctx, rawArgs)
+		return e.ComplexityRoot.CreateOrganizationPayload.OrganizationID(childComplexity), true
+	case "CreateOrganizationPayload.owner":
+		if e.ComplexityRoot.CreateOrganizationPayload.Owner == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CreateOrganizationPayload.Owner(childComplexity), true
+
+	case "Mutation.createOrganization":
+		if e.ComplexityRoot.Mutation.CreateOrganization == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createOrganization_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.RegisterUser(childComplexity, args["input"].(app.RegisterUserInput)), true
+		return e.ComplexityRoot.Mutation.CreateOrganization(childComplexity, args["input"].(app.CreateOrganizationInput)), true
 
 	case "Query.user":
 		if e.ComplexityRoot.Query.User == nil {
@@ -136,6 +156,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.User.LastName(childComplexity), true
+	case "User.organizationId":
+		if e.ComplexityRoot.User.OrganizationID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.OrganizationID(childComplexity), true
+	case "User.roleId":
+		if e.ComplexityRoot.User.RoleID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.RoleID(childComplexity), true
 
 	}
 	return 0, false
@@ -146,7 +178,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalers := func() *graphql.InputUnmarshalerIndex {
 		return graphql.NewInputUnmarshalerIndex(
-			graphql.NewInputUnmarshaler("RegisterUserInput", ec.unmarshalInputRegisterUserInput),
+			graphql.NewInputUnmarshaler("CreateOrganizationInput", ec.unmarshalInputCreateOrganizationInput),
 		)
 	}
 	first := true
@@ -227,16 +259,24 @@ var sources = []*ast.Source{
 
 type User {
   id: ID!
+  organizationId: ID!
+  roleId: ID!
   email: String!
   firstName: String!
   lastName: String!
   createdAt: Time!
 }
 
-input RegisterUserInput {
-  email: String!
-  firstName: String!
-  lastName: String!
+input CreateOrganizationInput {
+  name: String!
+  ownerEmail: String!
+  ownerFirstName: String!
+  ownerLastName: String!
+}
+
+type CreateOrganizationPayload {
+  organizationId: ID!
+  owner: User!
 }
 
 type Query {
@@ -244,7 +284,7 @@ type Query {
 }
 
 type Mutation {
-  registerUser(input: RegisterUserInput!): User!
+  createOrganization(input: CreateOrganizationInput!): CreateOrganizationPayload!
 }
 `, BuiltIn: false},
 }
@@ -254,10 +294,24 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
 
+func (ec *executionContext) childFields_CreateOrganizationPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "organizationId":
+		return ec.fieldContext_CreateOrganizationPayload_organizationId(ctx, field)
+	case "owner":
+		return ec.fieldContext_CreateOrganizationPayload_owner(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CreateOrganizationPayload", field.Name)
+}
+
 func (ec *executionContext) childFields_User(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "id":
 		return ec.fieldContext_User_id(ctx, field)
+	case "organizationId":
+		return ec.fieldContext_User_organizationId(ctx, field)
+	case "roleId":
+		return ec.fieldContext_User_roleId(ctx, field)
 	case "email":
 		return ec.fieldContext_User_email(ctx, field)
 	case "firstName":
@@ -386,12 +440,12 @@ func (ec *executionContext) childFields___Type(ctx context.Context, field graphq
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_registerUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_createOrganization_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
-		func(ctx context.Context, v any) (app.RegisterUserInput, error) {
-			return ec.unmarshalNRegisterUserInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐRegisterUserInput(ctx, v)
+		func(ctx context.Context, v any) (app.CreateOrganizationInput, error) {
+			return ec.unmarshalNCreateOrganizationInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐCreateOrganizationInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -502,17 +556,39 @@ func (ec *executionContext) field___Type_inputFields_args(ctx context.Context, r
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Mutation_registerUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _CreateOrganizationPayload_organizationId(ctx context.Context, field graphql.CollectedField, obj *app.CreateOrganizationPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Mutation_registerUser(ctx, field)
+			return ec.fieldContext_CreateOrganizationPayload_organizationId(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RegisterUser(ctx, fc.Args["input"].(app.RegisterUserInput))
+			return obj.OrganizationID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CreateOrganizationPayload_organizationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CreateOrganizationPayload", field, false, false, "ID")
+}
+
+func (ec *executionContext) _CreateOrganizationPayload_owner(ctx context.Context, field graphql.CollectedField, obj *app.CreateOrganizationPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CreateOrganizationPayload_owner(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Owner, nil
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *app.User) graphql.Marshaler {
@@ -522,14 +598,47 @@ func (ec *executionContext) _Mutation_registerUser(ctx context.Context, field gr
 		true,
 	)
 }
-func (ec *executionContext) fieldContext_Mutation_registerUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_CreateOrganizationPayload_owner(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateOrganizationPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_User(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createOrganization(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_createOrganization(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateOrganization(ctx, fc.Args["input"].(app.CreateOrganizationInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *app.CreateOrganizationPayload) graphql.Marshaler {
+			return ec.marshalNCreateOrganizationPayload2ᚖgithubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐCreateOrganizationPayload(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_createOrganization(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_User(ctx, field)
+			return ec.childFields_CreateOrganizationPayload(ctx, field)
 		},
 	}
 	defer func() {
@@ -539,7 +648,7 @@ func (ec *executionContext) fieldContext_Mutation_registerUser(ctx context.Conte
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_registerUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_createOrganization_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -686,6 +795,52 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	)
 }
 func (ec *executionContext) fieldContext_User_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("User", field, false, false, "ID")
+}
+
+func (ec *executionContext) _User_organizationId(ctx context.Context, field graphql.CollectedField, obj *app.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_organizationId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OrganizationID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_User_organizationId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("User", field, false, false, "ID")
+}
+
+func (ec *executionContext) _User_roleId(ctx context.Context, field graphql.CollectedField, obj *app.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_roleId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RoleID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_User_roleId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("User", field, false, false, "ID")
 }
 
@@ -1854,8 +2009,8 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context, obj any) (app.RegisterUserInput, error) {
-	var it app.RegisterUserInput
+func (ec *executionContext) unmarshalInputCreateOrganizationInput(ctx context.Context, obj any) (app.CreateOrganizationInput, error) {
+	var it app.CreateOrganizationInput
 	if obj == nil {
 		return it, nil
 	}
@@ -1865,48 +2020,55 @@ func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"email", "firstName", "lastName"}
+	fieldsInOrder := [...]string{"name", "ownerEmail", "ownerFirstName", "ownerLastName"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "email":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Email = data
-		case "firstName":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstName"))
+			it.Name = data
+		case "ownerEmail":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerEmail"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.FirstName = data
-		case "lastName":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastName"))
+			it.OwnerEmail = data
+		case "ownerFirstName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerFirstName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.LastName = data
+			it.OwnerFirstName = data
+		case "ownerLastName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerLastName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerLastName = data
 		}
 	}
 	return it, nil
 }
 
-// UnmarshalRegisterUserInput unmarshals raw into the RegisterUserInput input type, using the
+// UnmarshalCreateOrganizationInput unmarshals raw into the CreateOrganizationInput input type, using the
 // unmarshaler bound to ctx's request. Call it from a resolver to decode an input
 // object that was not passed as a field argument.
 //
 // ctx must come from a gqlgen request; outside one there is no unmarshaler to use
 // and the returned error says so.
-func UnmarshalRegisterUserInput(ctx context.Context, raw any) (app.RegisterUserInput, error) {
-	var out app.RegisterUserInput
-	err := graphql.UnmarshalNamedInputFromContext(ctx, "RegisterUserInput", raw, &out)
+func UnmarshalCreateOrganizationInput(ctx context.Context, raw any) (app.CreateOrganizationInput, error) {
+	var out app.CreateOrganizationInput
+	err := graphql.UnmarshalNamedInputFromContext(ctx, "CreateOrganizationInput", raw, &out)
 	return out, err
 }
 
@@ -1917,6 +2079,44 @@ func UnmarshalRegisterUserInput(ctx context.Context, raw any) (app.RegisterUserI
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var createOrganizationPayloadImplementors = []string{"CreateOrganizationPayload"}
+
+func (ec *executionContext) _CreateOrganizationPayload(ctx context.Context, sel ast.SelectionSet, obj *app.CreateOrganizationPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createOrganizationPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := graphql.NewDeferredGroup(ctx)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateOrganizationPayload")
+		case "organizationId":
+			out.Values[i] = ec._CreateOrganizationPayload_organizationId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "owner":
+			out.Values[i] = ec._CreateOrganizationPayload_owner(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	if n := len(deferred.Defers); n > 0 {
+		atomic.AddInt32(&ec.Deferred, int32(min(n, math.MaxInt32)))
+		ec.ProcessDeferredGroup(deferred)
+	}
+
+	return out
+}
 
 var mutationImplementors = []string{"Mutation"}
 
@@ -1937,9 +2137,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "registerUser":
+		case "createOrganization":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_registerUser(ctx, field)
+				return ec._Mutation_createOrganization(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -2030,6 +2230,16 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = graphql.MarshalString("User")
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "organizationId":
+			out.Values[i] = ec._User_organizationId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "roleId":
+			out.Values[i] = ec._User_roleId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -2446,6 +2656,19 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCreateOrganizationInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐCreateOrganizationInput(ctx context.Context, v any) (app.CreateOrganizationInput, error) {
+	res, err := ec.unmarshalInputCreateOrganizationInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateOrganizationPayload2ᚖgithubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐCreateOrganizationPayload(ctx context.Context, sel ast.SelectionSet, v *app.CreateOrganizationPayload) graphql.Marshaler {
+	if v == nil {
+		graphql.AddInvalidNullError(ctx, "CreateOrganizationPayload!")
+		return graphql.Null
+	}
+	return ec._CreateOrganizationPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2458,11 +2681,6 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		graphql.AddInvalidNullFromMarshaler(ctx, "ID!")
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNRegisterUserInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐRegisterUserInput(ctx context.Context, v any) (app.RegisterUserInput, error) {
-	res, err := ec.unmarshalInputRegisterUserInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {

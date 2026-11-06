@@ -2,16 +2,24 @@ scalar Time
 
 type User {
   id: ID!
+  organizationId: ID!
+  roleId: ID!
   email: String!
   firstName: String!
   lastName: String!
   createdAt: Time!
 }
 
-input RegisterUserInput {
-  email: String!
-  firstName: String!
-  lastName: String!
+input CreateOrganizationInput {
+  name: String!
+  ownerEmail: String!
+  ownerFirstName: String!
+  ownerLastName: String!
+}
+
+type CreateOrganizationPayload {
+  organizationId: ID!
+  owner: User!
 }
 
 type Query {
@@ -19,5 +27,5 @@ type Query {
 }
 
 type Mutation {
-  registerUser(input: RegisterUserInput!): User!
+  createOrganization(input: CreateOrganizationInput!): CreateOrganizationPayload!
 }

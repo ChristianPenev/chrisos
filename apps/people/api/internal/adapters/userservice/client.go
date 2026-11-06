@@ -26,19 +26,23 @@ func NewClient(conn grpc.ClientConnInterface) *Client {
 	return &Client{users: userv1.NewUserServiceClient(conn), timeout: defaultTimeout}
 }
 
-func (c *Client) RegisterUser(ctx context.Context, in app.RegisterUserInput) (string, error) {
+func (c *Client) CreateOrganization(ctx context.Context, in app.CreateOrganizationInput) (app.CreatedOrganization, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	resp, err := c.users.RegisterUser(ctx, &userv1.RegisterUserRequest{
-		Email:     in.Email,
-		FirstName: in.FirstName,
-		LastName:  in.LastName,
+	resp, err := c.users.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+		OrganizationName: in.Name,
+		OwnerEmail:       in.OwnerEmail,
+		OwnerFirstName:   in.OwnerFirstName,
+		OwnerLastName:    in.OwnerLastName,
 	})
 	if err != nil {
-		return "", translate(err)
+		return app.CreatedOrganization{}, translate(err)
 	}
-	return resp.GetId(), nil
+	return app.CreatedOrganization{
+		OrganizationID: resp.GetOrganizationId(),
+		OwnerUserID:    resp.GetOwnerUserId(),
+	}, nil
 }
 
 func (c *Client) GetUser(ctx context.Context, id string) (*app.User, error) {
@@ -52,11 +56,13 @@ func (c *Client) GetUser(ctx context.Context, id string) (*app.User, error) {
 
 	u := resp.GetUser()
 	return &app.User{
-		ID:        u.GetId(),
-		Email:     u.GetEmail(),
-		FirstName: u.GetFirstName(),
-		LastName:  u.GetLastName(),
-		CreatedAt: u.GetCreatedAt().AsTime(),
+		ID:             u.GetId(),
+		OrganizationID: u.GetOrganizationId(),
+		RoleID:         u.GetRoleId(),
+		Email:          u.GetEmail(),
+		FirstName:      u.GetFirstName(),
+		LastName:       u.GetLastName(),
+		CreatedAt:      u.GetCreatedAt().AsTime(),
 	}, nil
 }
 

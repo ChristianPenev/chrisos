@@ -7,8 +7,8 @@ import (
 	"github.com/ChristianPenev/chrisos/apps/people/api/internal/app"
 )
 
-func (r *mutationResolver) RegisterUser(ctx context.Context, input app.RegisterUserInput) (*app.User, error) {
-	return r.app.RegisterUser(ctx, input)
+func (r *mutationResolver) CreateOrganization(ctx context.Context, input app.CreateOrganizationInput) (*app.CreateOrganizationPayload, error) {
+	return r.app.CreateOrganization(ctx, input)
 }
 
 func (r *queryResolver) User(ctx context.Context, id string) (*app.User, error) {

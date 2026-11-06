@@ -20,16 +20,20 @@ func NewServer(app application.Application) *Server {
 	return &Server{app: app}
 }
 
-func (s *Server) RegisterUser(ctx context.Context, req *userv1.RegisterUserRequest) (*userv1.RegisterUserResponse, error) {
-	id, err := s.app.Commands.RegisterUser.Handle(ctx, command.RegisterUser{
-		Email:     req.GetEmail(),
-		FirstName: req.GetFirstName(),
-		LastName:  req.GetLastName(),
+func (s *Server) CreateOrganization(ctx context.Context, req *userv1.CreateOrganizationRequest) (*userv1.CreateOrganizationResponse, error) {
+	res, err := s.app.Commands.CreateOrganization.Handle(ctx, command.CreateOrganization{
+		Name:      req.GetOrganizationName(),
+		Email:     req.GetOwnerEmail(),
+		FirstName: req.GetOwnerFirstName(),
+		LastName:  req.GetOwnerLastName(),
 	})
 	if err != nil {
 		return nil, toStatus(err)
 	}
-	return &userv1.RegisterUserResponse{Id: id.String()}, nil
+	return &userv1.CreateOrganizationResponse{
+		OrganizationId: res.OrganizationID.String(),
+		OwnerUserId:    res.UserID.String(),
+	}, nil
 }
 
 func (s *Server) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*userv1.GetUserResponse, error) {
@@ -38,10 +42,12 @@ func (s *Server) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*user
 		return nil, toStatus(err)
 	}
 	return &userv1.GetUserResponse{User: &userv1.User{
-		Id:        v.ID,
-		Email:     v.Email,
-		FirstName: v.FirstName,
-		LastName:  v.LastName,
-		CreatedAt: timestamppb.New(v.CreatedAt),
+		Id:             v.ID,
+		OrganizationId: v.OrganizationID,
+		RoleId:         v.RoleID,
+		Email:          v.Email,
+		FirstName:      v.FirstName,
+		LastName:       v.LastName,
+		CreatedAt:      timestamppb.New(v.CreatedAt),
 	}}, nil
 }

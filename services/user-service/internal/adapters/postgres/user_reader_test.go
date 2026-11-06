@@ -25,6 +25,8 @@ func TestUserReader(t *testing.T) {
 			t.Fatal(err)
 		}
 		if v.ID != jane.ID().String() ||
+			v.OrganizationID != orgID.String() ||
+			v.RoleID != roleID.String() ||
 			v.Email != jane.Email().String() ||
 			v.FirstName != jane.FirstName() ||
 			v.LastName != jane.LastName() ||

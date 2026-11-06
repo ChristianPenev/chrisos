@@ -16,20 +16,21 @@ import (
 )
 
 type fakeUserService struct {
-	users       map[string]*app.User
-	registerErr error
-	getErr      error
+	users     map[string]*app.User
+	createErr error
+	getErr    error
 }
 
-func (f *fakeUserService) RegisterUser(_ context.Context, in app.RegisterUserInput) (string, error) {
-	if f.registerErr != nil {
-		return "", f.registerErr
+func (f *fakeUserService) CreateOrganization(_ context.Context, in app.CreateOrganizationInput) (app.CreatedOrganization, error) {
+	if f.createErr != nil {
+		return app.CreatedOrganization{}, f.createErr
 	}
 	f.users["user-1"] = &app.User{
-		ID: "user-1", Email: in.Email, FirstName: in.FirstName, LastName: in.LastName,
+		ID: "user-1", OrganizationID: "org-1", RoleID: "role-1",
+		Email: in.OwnerEmail, FirstName: in.OwnerFirstName, LastName: in.OwnerLastName,
 		CreatedAt: time.Date(2026, 11, 6, 10, 0, 0, 0, time.UTC),
 	}
-	return "user-1", nil
+	return app.CreatedOrganization{OrganizationID: "org-1", OwnerUserID: "user-1"}, nil
 }
 
 func (f *fakeUserService) GetUser(_ context.Context, id string) (*app.User, error) {
@@ -79,16 +80,21 @@ func assertErrorCode(t *testing.T, resp gqlResponse, want string) {
 	}
 }
 
-const registerJane = `mutation { registerUser(input: {email: "jane@example.com", firstName: "Jane", lastName: "Doe"}) { id email firstName lastName createdAt } }`
+const createAcme = `mutation {
+	createOrganization(input: {name: "Acme", ownerEmail: "jane@example.com", ownerFirstName: "Jane", ownerLastName: "Doe"}) {
+		organizationId
+		owner { id organizationId roleId email firstName lastName createdAt }
+	}
+}`
 
-func TestRegisterUser(t *testing.T) {
-	resp := do(t, &fakeUserService{users: map[string]*app.User{}}, registerJane)
+func TestCreateOrganization(t *testing.T) {
+	resp := do(t, &fakeUserService{users: map[string]*app.User{}}, createAcme)
 
 	if len(resp.Errors) != 0 {
 		t.Fatalf("unexpected errors: %+v", resp.Errors)
 	}
-	want := `{"id":"user-1","email":"jane@example.com","firstName":"Jane","lastName":"Doe","createdAt":"2026-11-06T10:00:00Z"}`
-	if got := string(resp.Data["registerUser"]); got != want {
+	want := `{"organizationId":"org-1","owner":{"id":"user-1","organizationId":"org-1","roleId":"role-1","email":"jane@example.com","firstName":"Jane","lastName":"Doe","createdAt":"2026-11-06T10:00:00Z"}}`
+	if got := string(resp.Data["createOrganization"]); got != want {
 		t.Fatalf("got  %s\nwant %s", got, want)
 	}
 }
@@ -119,7 +125,7 @@ func TestUserNotFound(t *testing.T) {
 	}
 }
 
-func TestRegisterUserErrors(t *testing.T) {
+func TestCreateOrganizationErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		err      error
@@ -132,7 +138,7 @@ func TestRegisterUserErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp := do(t, &fakeUserService{users: map[string]*app.User{}, registerErr: tt.err}, registerJane)
+			resp := do(t, &fakeUserService{users: map[string]*app.User{}, createErr: tt.err}, createAcme)
 			assertErrorCode(t, resp, tt.wantCode)
 			if msg := resp.Errors[0].Message; msg != tt.wantMsg {
 				t.Errorf("want message %q, got %q", tt.wantMsg, msg)

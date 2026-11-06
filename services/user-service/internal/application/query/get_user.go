@@ -8,11 +8,13 @@ import (
 )
 
 type UserView struct {
-	ID        string
-	Email     string
-	FirstName string
-	LastName  string
-	CreatedAt time.Time
+	ID             string
+	OrganizationID string
+	RoleID         string
+	Email          string
+	FirstName      string
+	LastName       string
+	CreatedAt      time.Time
 }
 
 type UserReader interface {
