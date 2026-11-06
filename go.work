@@ -1,6 +1,7 @@
 go 1.27.3
 
 use (
+	./apps/people/api
 	./gen/go
 	./pkg
 	./services/user-service
