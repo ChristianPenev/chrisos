@@ -13,7 +13,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/ChristianPenev/chrisos/apps/people/api/internal/adapters/graphql/model"
 	"github.com/ChristianPenev/chrisos/apps/people/api/internal/app"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -38,7 +37,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		RegisterUser func(childComplexity int, input model.RegisterUserInput) int
+		RegisterUser func(childComplexity int, input app.RegisterUserInput) int
 	}
 
 	Query struct {
@@ -59,7 +58,7 @@ type ComplexityRoot struct {
 // region    ************************** generated!.gotpl **************************
 
 type MutationResolver interface {
-	RegisterUser(ctx context.Context, input model.RegisterUserInput) (*app.User, error)
+	RegisterUser(ctx context.Context, input app.RegisterUserInput) (*app.User, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id string) (*app.User, error)
@@ -93,7 +92,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.RegisterUser(childComplexity, args["input"].(model.RegisterUserInput)), true
+		return e.ComplexityRoot.Mutation.RegisterUser(childComplexity, args["input"].(app.RegisterUserInput)), true
 
 	case "Query.user":
 		if e.ComplexityRoot.Query.User == nil {
@@ -391,8 +390,8 @@ func (ec *executionContext) field_Mutation_registerUser_args(ctx context.Context
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input",
-		func(ctx context.Context, v any) (model.RegisterUserInput, error) {
-			return ec.unmarshalNRegisterUserInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐRegisterUserInput(ctx, v)
+		func(ctx context.Context, v any) (app.RegisterUserInput, error) {
+			return ec.unmarshalNRegisterUserInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐRegisterUserInput(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -513,7 +512,7 @@ func (ec *executionContext) _Mutation_registerUser(ctx context.Context, field gr
 		},
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().RegisterUser(ctx, fc.Args["input"].(model.RegisterUserInput))
+			return ec.Resolvers.Mutation().RegisterUser(ctx, fc.Args["input"].(app.RegisterUserInput))
 		},
 		nil,
 		func(ctx context.Context, selections ast.SelectionSet, v *app.User) graphql.Marshaler {
@@ -1855,8 +1854,8 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context, obj any) (model.RegisterUserInput, error) {
-	var it model.RegisterUserInput
+func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context, obj any) (app.RegisterUserInput, error) {
+	var it app.RegisterUserInput
 	if obj == nil {
 		return it, nil
 	}
@@ -1905,8 +1904,8 @@ func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context,
 //
 // ctx must come from a gqlgen request; outside one there is no unmarshaler to use
 // and the returned error says so.
-func UnmarshalRegisterUserInput(ctx context.Context, raw any) (model.RegisterUserInput, error) {
-	var out model.RegisterUserInput
+func UnmarshalRegisterUserInput(ctx context.Context, raw any) (app.RegisterUserInput, error) {
+	var out app.RegisterUserInput
 	err := graphql.UnmarshalNamedInputFromContext(ctx, "RegisterUserInput", raw, &out)
 	return out, err
 }
@@ -2461,7 +2460,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNRegisterUserInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋadaptersᚋgraphqlᚋmodelᚐRegisterUserInput(ctx context.Context, v any) (model.RegisterUserInput, error) {
+func (ec *executionContext) unmarshalNRegisterUserInput2githubᚗcomᚋChristianPenevᚋchrisosᚋappsᚋpeopleᚋapiᚋinternalᚋappᚐRegisterUserInput(ctx context.Context, v any) (app.RegisterUserInput, error) {
 	res, err := ec.unmarshalInputRegisterUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }

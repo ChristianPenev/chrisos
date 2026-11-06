@@ -7,9 +7,3 @@ type Mutation struct {
 
 type Query struct {
 }
-
-type RegisterUserInput struct {
-	Email     string `json:"email"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-}

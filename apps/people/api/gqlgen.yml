@@ -1,3 +1,5 @@
+omit_gqlgen_file_notice: true
+
 schema:
   - schema/*.graphqls
 
@@ -15,6 +17,7 @@ resolver:
   layout: follow-schema
   dir: internal/adapters/graphql
   filename_template: "{name}.resolvers.go"
+  omit_template_comment: true
 
 autobind:
   - github.com/ChristianPenev/chrisos/apps/people/api/internal/app
