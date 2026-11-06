@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net"
+	"slices"
+	"strings"
 	"testing"
 
 	grpclib "google.golang.org/grpc"
@@ -13,6 +15,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	userv1 "github.com/ChristianPenev/chrisos/gen/go/user/v1"
+	"github.com/ChristianPenev/chrisos/pkg/pagination"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/command"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/query"
@@ -49,6 +52,39 @@ func (m *memoryStore) UserByID(_ context.Context, id user.ID) (query.UserView, e
 	if !ok {
 		return query.UserView{}, user.ErrUserNotFound
 	}
+	return toView(u), nil
+}
+
+func (m *memoryStore) UsersByOrganization(_ context.Context, orgID organization.ID, req pagination.Request) (pagination.Page[query.UserView], error) {
+	after := ""
+	if req.After != "" {
+		key, err := pagination.DecodeCursor[map[string]string](req.After)
+		if err != nil {
+			return pagination.Page[query.UserView]{}, err
+		}
+		after = key["id"]
+	}
+
+	var views []query.UserView
+	for _, u := range m.users {
+		if u.OrganizationID() == orgID && u.ID().String() > after {
+			views = append(views, toView(u))
+		}
+	}
+	slices.SortFunc(views, func(a, b query.UserView) int { return strings.Compare(a.ID, b.ID) })
+
+	if len(views) <= req.Size {
+		return pagination.Page[query.UserView]{Items: views}, nil
+	}
+	views = views[:req.Size]
+	next, err := pagination.EncodeCursor(map[string]string{"id": views[len(views)-1].ID})
+	if err != nil {
+		return pagination.Page[query.UserView]{}, err
+	}
+	return pagination.Page[query.UserView]{Items: views, NextCursor: next}, nil
+}
+
+func toView(u *user.User) query.UserView {
 	return query.UserView{
 		ID:             u.ID().String(),
 		OrganizationID: u.OrganizationID().String(),
@@ -57,7 +93,7 @@ func (m *memoryStore) UserByID(_ context.Context, id user.ID) (query.UserView, e
 		FirstName:      u.FirstName(),
 		LastName:       u.LastName(),
 		CreatedAt:      u.CreatedAt(),
-	}, nil
+	}
 }
 
 type memoryOrganizations struct{ m *memoryStore }

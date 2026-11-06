@@ -5,14 +5,25 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ChristianPenev/chrisos/pkg/pagination"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/organization"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/user"
 )
 
 type fakeReader struct {
 	views map[user.ID]UserView
+
+	gotOrg organization.ID
+	gotReq pagination.Request
+	page   pagination.Page[UserView]
 }
 
-func (f fakeReader) UserByID(_ context.Context, id user.ID) (UserView, error) {
+func (f *fakeReader) UsersByOrganization(_ context.Context, orgID organization.ID, req pagination.Request) (pagination.Page[UserView], error) {
+	f.gotOrg, f.gotReq = orgID, req
+	return f.page, nil
+}
+
+func (f *fakeReader) UserByID(_ context.Context, id user.ID) (UserView, error) {
 	v, ok := f.views[id]
 	if !ok {
 		return UserView{}, user.ErrUserNotFound
@@ -23,7 +34,7 @@ func (f fakeReader) UserByID(_ context.Context, id user.ID) (UserView, error) {
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
 	id := user.NewID()
-	handler := NewGetUserHandler(fakeReader{views: map[user.ID]UserView{
+	handler := NewGetUserHandler(&fakeReader{views: map[user.ID]UserView{
 		id: {ID: id.String(), Email: "jane@example.com"},
 	}})
 

@@ -51,12 +51,15 @@ func run() error {
 		return err
 	}
 
+	users := pgadapter.NewUserReader(db)
+
 	app := application.Application{
 		Commands: application.Commands{
 			CreateOrganization: command.NewCreateOrganizationHandler(pgadapter.NewTransactor(db)),
 		},
 		Queries: application.Queries{
-			GetUser: query.NewGetUserHandler(pgadapter.NewUserReader(db)),
+			GetUser:   query.NewGetUserHandler(users),
+			ListUsers: query.NewListUsersHandler(users),
 		},
 	}
 
