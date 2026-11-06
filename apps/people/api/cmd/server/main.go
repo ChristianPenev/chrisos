@@ -35,10 +35,16 @@ func run() error {
 	defer conn.Close()
 
 	application := app.New(userservice.NewClient(conn))
+	devTools := os.Getenv("GRAPHQL_DEV_TOOLS") == "true"
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /graphql", graphqladapter.NewHandler(application))
-	mux.Handle("GET /playground", playground.Handler("people-api", "/graphql"))
+	mux.Handle("POST /graphql", graphqladapter.NewHandler(application, devTools))
+	if devTools {
+		mux.Handle("GET /graphql", playground.ApolloSandboxHandler("people-api", "/graphql",
+			playground.WithApolloSandboxEndpointIsEditable(false),
+		))
+		log.Println("GraphQL introspection and Apollo Sandbox enabled on GET /graphql")
+	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

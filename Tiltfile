@@ -19,3 +19,22 @@ k8s_resource(
     port_forwards=9090,
     resource_deps=['postgres'],
 )
+
+# People API
+docker_build(
+    'chrisos/people-api',
+    '.',
+    dockerfile='./apps/people/api/Dockerfile',
+    only=['./pkg', './gen/go', './apps/people/api'],
+)
+
+k8s_yaml([
+    './infrastructure/k8s/people-api/deployment.yaml',
+    './infrastructure/k8s/people-api/service.yaml',
+])
+
+k8s_resource(
+    'people-api',
+    port_forwards=8080,
+    resource_deps=['user-service'],
+)

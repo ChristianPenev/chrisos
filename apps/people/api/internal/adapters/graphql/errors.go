@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 
 	gql "github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -28,13 +29,18 @@ func presentError(ctx context.Context, err error) *gqlerror.Error {
 		setCode(gqlErr, codeBadUserInput)
 	case errors.Is(err, app.ErrEmailAlreadyExists):
 		setCode(gqlErr, codeConflict)
-	case gqlErr.Extensions["code"] != nil:
+	case gqlErr.Extensions["code"] != nil, isIntrospectionField(ctx):
 	default:
 		log.Printf("graphql %s: %v", gqlErr.Path, err)
 		gqlErr.Message = "internal error"
 		setCode(gqlErr, codeInternal)
 	}
 	return gqlErr
+}
+
+func isIntrospectionField(ctx context.Context) bool {
+	fc := gql.GetFieldContext(ctx)
+	return fc != nil && strings.HasPrefix(fc.Field.Name, "__")
 }
 
 func setCode(e *gqlerror.Error, code string) {

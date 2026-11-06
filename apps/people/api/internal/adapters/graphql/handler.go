@@ -13,12 +13,14 @@ import (
 
 const maxQueryComplexity = 100
 
-func NewHandler(application *app.Application) http.Handler {
+func NewHandler(application *app.Application, introspection bool) http.Handler {
 	srv := handler.New(generated.NewExecutableSchema(generated.Config{
 		Resolvers: &Resolver{app: application},
 	}))
 	srv.AddTransport(transport.POST{})
-	srv.Use(extension.Introspection{})
+	if introspection {
+		srv.Use(extension.Introspection{})
+	}
 	srv.Use(extension.FixedComplexityLimit(maxQueryComplexity))
 	srv.SetErrorPresenter(presentError)
 	return srv

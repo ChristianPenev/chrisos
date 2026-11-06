@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: people-api
+    labels:
+        app: people-api
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: people-api
+    template:
+        metadata:
+            labels:
+                app: people-api
+        spec:
+            containers:
+                - name: people-api
+                  image: chrisos/people-api:0.0.1
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                      - name: http
+                        containerPort: 8080
+                  readinessProbe:
+                      httpGet:
+                          path: /healthz
+                          port: http
+                      initialDelaySeconds: 2
+                      periodSeconds: 5
+                  livenessProbe:
+                      httpGet:
+                          path: /healthz
+                          port: http
+                      initialDelaySeconds: 5
+                      periodSeconds: 10
+                  env:
+                      - name: USER_SERVICE_ADDR
+                        value: user-service:9090
+                      - name: GRAPHQL_DEV_TOOLS
+                        value: "true"

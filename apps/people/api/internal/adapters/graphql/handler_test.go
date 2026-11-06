@@ -60,7 +60,7 @@ func do(t *testing.T, fake *fakeUserService, query string) gqlResponse {
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
-	NewHandler(app.New(fake)).ServeHTTP(rec, req)
+	NewHandler(app.New(fake), true).ServeHTTP(rec, req)
 
 	var resp gqlResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
@@ -154,4 +154,21 @@ func TestComplexityLimit(t *testing.T) {
 	}
 	resp := do(t, &fakeUserService{users: map[string]*app.User{}}, "{ "+fmt.Sprintf(fields, aliases...)+" }")
 	assertErrorCode(t, resp, "COMPLEXITY_LIMIT_EXCEEDED")
+}
+
+func TestIntrospectionDisabled(t *testing.T) {
+	body := strings.NewReader(`{"query":"{ __schema { queryType { name } } }"}`)
+	req := httptest.NewRequest(http.MethodPost, "/graphql", body)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	NewHandler(app.New(&fakeUserService{users: map[string]*app.User{}}), false).ServeHTTP(rec, req)
+
+	var resp gqlResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Errors) != 1 || resp.Errors[0].Message != "introspection disabled" {
+		t.Fatalf("want an introspection disabled error, got %s", rec.Body.String())
+	}
 }
