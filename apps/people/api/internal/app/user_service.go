@@ -23,7 +23,19 @@ type CreatedOrganization struct {
 	OwnerUserID    string
 }
 
+type ListUsersInput struct {
+	OrganizationID string
+	First          int
+	After          string
+}
+
+type UserPage struct {
+	Users      []*User
+	NextCursor string
+}
+
 type UserService interface {
 	CreateOrganization(ctx context.Context, in CreateOrganizationInput) (CreatedOrganization, error)
 	GetUser(ctx context.Context, id string) (*User, error)
+	ListUsers(ctx context.Context, in ListUsersInput) (*UserPage, error)
 }

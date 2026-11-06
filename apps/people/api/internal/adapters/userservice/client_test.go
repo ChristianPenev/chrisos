@@ -3,6 +3,7 @@ package userservice
 import (
 	"context"
 	"errors"
+	"math"
 	"net"
 	"testing"
 	"time"
@@ -23,6 +24,21 @@ type fakeUserService struct {
 	err   error
 	delay time.Duration
 	got   *userv1.CreateOrganizationRequest
+	list  *userv1.ListUsersRequest
+}
+
+func (f *fakeUserService) ListUsers(ctx context.Context, req *userv1.ListUsersRequest) (*userv1.ListUsersResponse, error) {
+	f.list = req
+	if f.err != nil {
+		return nil, f.err
+	}
+	return &userv1.ListUsersResponse{
+		Users: []*userv1.User{
+			{Id: "user-1", OrganizationId: req.GetOrganizationId(), Email: "a@example.com"},
+			{Id: "user-2", OrganizationId: req.GetOrganizationId(), Email: "b@example.com"},
+		},
+		NextPageToken: "next",
+	}, nil
 }
 
 func (f *fakeUserService) CreateOrganization(ctx context.Context, req *userv1.CreateOrganizationRequest) (*userv1.CreateOrganizationResponse, error) {
@@ -103,6 +119,37 @@ func TestGetUser(t *testing.T) {
 	}
 	if *u != want {
 		t.Errorf("got %+v, want %+v", *u, want)
+	}
+}
+
+func TestListUsers(t *testing.T) {
+	fake := &fakeUserService{}
+	page, err := newTestClient(t, fake).ListUsers(context.Background(), app.ListUsersInput{
+		OrganizationID: "org-1", First: 2, After: "abc",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fake.list.GetOrganizationId() != "org-1" || fake.list.GetPageSize() != 2 || fake.list.GetPageToken() != "abc" {
+		t.Errorf("request not mapped: %+v", fake.list)
+	}
+	if len(page.Users) != 2 || page.Users[1].Email != "b@example.com" || page.Users[0].OrganizationID != "org-1" {
+		t.Errorf("users not mapped: %+v", page.Users)
+	}
+	if page.NextCursor != "next" {
+		t.Errorf("next cursor = %q", page.NextCursor)
+	}
+}
+
+func TestListUsersClampsHugePageSize(t *testing.T) {
+	fake := &fakeUserService{}
+	if _, err := newTestClient(t, fake).ListUsers(context.Background(), app.ListUsersInput{
+		OrganizationID: "org-1", First: math.MaxInt32 + 1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if fake.list.GetPageSize() != math.MaxInt32 {
+		t.Errorf("page size = %d, want %d", fake.list.GetPageSize(), int32(math.MaxInt32))
 	}
 }
 

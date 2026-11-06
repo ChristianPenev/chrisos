@@ -3,6 +3,7 @@ package userservice
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"google.golang.org/grpc"
@@ -54,7 +55,30 @@ func (c *Client) GetUser(ctx context.Context, id string) (*app.User, error) {
 		return nil, translate(err)
 	}
 
-	u := resp.GetUser()
+	return fromProtoUser(resp.GetUser()), nil
+}
+
+func (c *Client) ListUsers(ctx context.Context, in app.ListUsersInput) (*app.UserPage, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	resp, err := c.users.ListUsers(ctx, &userv1.ListUsersRequest{
+		OrganizationId: in.OrganizationID,
+		PageSize:       int32(min(in.First, math.MaxInt32)),
+		PageToken:      in.After,
+	})
+	if err != nil {
+		return nil, translate(err)
+	}
+
+	users := make([]*app.User, len(resp.GetUsers()))
+	for i, u := range resp.GetUsers() {
+		users[i] = fromProtoUser(u)
+	}
+	return &app.UserPage{Users: users, NextCursor: resp.GetNextPageToken()}, nil
+}
+
+func fromProtoUser(u *userv1.User) *app.User {
 	return &app.User{
 		ID:             u.GetId(),
 		OrganizationID: u.GetOrganizationId(),
@@ -63,7 +87,7 @@ func (c *Client) GetUser(ctx context.Context, id string) (*app.User, error) {
 		FirstName:      u.GetFirstName(),
 		LastName:       u.GetLastName(),
 		CreatedAt:      u.GetCreatedAt().AsTime(),
-	}, nil
+	}
 }
 
 func translate(err error) error {

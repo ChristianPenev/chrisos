@@ -19,6 +19,17 @@ type fakeUserService struct {
 	users     map[string]*app.User
 	createErr error
 	getErr    error
+	listErr   error
+	gotList   app.ListUsersInput
+	page      *app.UserPage
+}
+
+func (f *fakeUserService) ListUsers(_ context.Context, in app.ListUsersInput) (*app.UserPage, error) {
+	f.gotList = in
+	if f.listErr != nil {
+		return nil, f.listErr
+	}
+	return f.page, nil
 }
 
 func (f *fakeUserService) CreateOrganization(_ context.Context, in app.CreateOrganizationInput) (app.CreatedOrganization, error) {
@@ -145,6 +156,61 @@ func TestCreateOrganizationErrors(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUsers(t *testing.T) {
+	jane := &app.User{ID: "user-1", Email: "jane@example.com"}
+	john := &app.User{ID: "user-2", Email: "john@example.com"}
+
+	t.Run("middle page", func(t *testing.T) {
+		fake := &fakeUserService{page: &app.UserPage{Users: []*app.User{jane, john}, NextCursor: "cursor-2"}}
+		resp := do(t, fake, `{ users(organizationId: "org-1", first: 2, after: "cursor-1") {
+			nodes { id email }
+			pageInfo { hasNextPage endCursor }
+		} }`)
+
+		if len(resp.Errors) != 0 {
+			t.Fatalf("unexpected errors: %+v", resp.Errors)
+		}
+		want := `{"nodes":[{"id":"user-1","email":"jane@example.com"},{"id":"user-2","email":"john@example.com"}],"pageInfo":{"hasNextPage":true,"endCursor":"cursor-2"}}`
+		if got := string(resp.Data["users"]); got != want {
+			t.Fatalf("got  %s\nwant %s", got, want)
+		}
+		if fake.gotList != (app.ListUsersInput{OrganizationID: "org-1", First: 2, After: "cursor-1"}) {
+			t.Errorf("service got %+v", fake.gotList)
+		}
+	})
+
+	t.Run("last page has no end cursor", func(t *testing.T) {
+		fake := &fakeUserService{page: &app.UserPage{Users: []*app.User{jane}}}
+		resp := do(t, fake, `{ users(organizationId: "org-1") { nodes { id } pageInfo { hasNextPage endCursor } } }`)
+
+		if len(resp.Errors) != 0 {
+			t.Fatalf("unexpected errors: %+v", resp.Errors)
+		}
+		want := `{"nodes":[{"id":"user-1"}],"pageInfo":{"hasNextPage":false,"endCursor":null}}`
+		if got := string(resp.Data["users"]); got != want {
+			t.Fatalf("got  %s\nwant %s", got, want)
+		}
+		if fake.gotList != (app.ListUsersInput{OrganizationID: "org-1"}) {
+			t.Errorf("omitted arguments should be zero values, service got %+v", fake.gotList)
+		}
+	})
+
+	t.Run("empty organization", func(t *testing.T) {
+		fake := &fakeUserService{page: &app.UserPage{Users: []*app.User{}}}
+		resp := do(t, fake, `{ users(organizationId: "org-1") { nodes { id } pageInfo { hasNextPage } } }`)
+
+		if got := string(resp.Data["users"]); got != `{"nodes":[],"pageInfo":{"hasNextPage":false}}` {
+			t.Fatalf("got %s", got)
+		}
+	})
+
+	t.Run("invalid input is BAD_USER_INPUT", func(t *testing.T) {
+		fake := &fakeUserService{listErr: fmt.Errorf("%w: %s", app.ErrInvalidInput, "invalid cursor")}
+		resp := do(t, fake, `{ users(organizationId: "org-1", after: "garbage") { nodes { id } } }`)
+		assertErrorCode(t, resp, codeBadUserInput)
+	})
 }
 
 func TestValidationErrorsKeepTheirCode(t *testing.T) {

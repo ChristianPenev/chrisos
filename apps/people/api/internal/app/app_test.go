@@ -10,6 +10,13 @@ type fakeUserService struct {
 	users     map[string]*User
 	createErr error
 	calls     []string
+	gotList   ListUsersInput
+}
+
+func (f *fakeUserService) ListUsers(_ context.Context, in ListUsersInput) (*UserPage, error) {
+	f.calls = append(f.calls, "ListUsers")
+	f.gotList = in
+	return &UserPage{Users: []*User{{ID: "user-1"}}, NextCursor: "next"}, nil
 }
 
 func (f *fakeUserService) CreateOrganization(_ context.Context, in CreateOrganizationInput) (CreatedOrganization, error) {
@@ -59,5 +66,21 @@ func TestCreateOrganizationStopsOnError(t *testing.T) {
 	}
 	if len(fake.calls) != 1 {
 		t.Errorf("GetUser should not be called after a failed create: %v", fake.calls)
+	}
+}
+
+func TestListUsersPassesInputThrough(t *testing.T) {
+	fake := &fakeUserService{users: map[string]*User{}}
+	in := ListUsersInput{OrganizationID: "org-1", First: 10, After: "abc"}
+
+	page, err := New(fake).ListUsers(context.Background(), in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fake.gotList != in {
+		t.Errorf("service got %+v, want %+v", fake.gotList, in)
+	}
+	if len(page.Users) != 1 || page.NextCursor != "next" {
+		t.Errorf("got %+v", page)
 	}
 }

@@ -30,3 +30,7 @@ func (a *Application) CreateOrganization(ctx context.Context, in CreateOrganizat
 func (a *Application) GetUser(ctx context.Context, id string) (*User, error) {
 	return a.users.GetUser(ctx, id)
 }
+
+func (a *Application) ListUsers(ctx context.Context, in ListUsersInput) (*UserPage, error) {
+	return a.users.ListUsers(ctx, in)
+}

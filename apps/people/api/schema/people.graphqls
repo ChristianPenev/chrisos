@@ -22,8 +22,19 @@ type CreateOrganizationPayload {
   owner: User!
 }
 
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type UserConnection {
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
 type Query {
   user(id: ID!): User
+  users(organizationId: ID!, first: Int, after: String): UserConnection!
 }
 
 type Mutation {

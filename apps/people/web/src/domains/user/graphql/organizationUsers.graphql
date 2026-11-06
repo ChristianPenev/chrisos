@@ -1,0 +1,19 @@
+fragment UserListItem on User {
+  id
+  email
+  firstName
+  lastName
+  createdAt
+}
+
+query OrganizationUsers($organizationId: ID!, $first: Int, $after: String) {
+  users(organizationId: $organizationId, first: $first, after: $after) {
+    nodes {
+      ...UserListItem
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}

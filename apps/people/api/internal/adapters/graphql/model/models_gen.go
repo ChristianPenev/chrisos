@@ -2,8 +2,22 @@
 
 package model
 
+import (
+	"github.com/ChristianPenev/chrisos/apps/people/api/internal/app"
+)
+
 type Mutation struct {
 }
 
+type PageInfo struct {
+	HasNextPage bool    `json:"hasNextPage"`
+	EndCursor   *string `json:"endCursor,omitempty"`
+}
+
 type Query struct {
+}
+
+type UserConnection struct {
+	Nodes    []*app.User `json:"nodes"`
+	PageInfo *PageInfo   `json:"pageInfo"`
 }
