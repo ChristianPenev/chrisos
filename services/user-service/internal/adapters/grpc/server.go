@@ -41,7 +41,28 @@ func (s *Server) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*user
 	if err != nil {
 		return nil, toStatus(err)
 	}
-	return &userv1.GetUserResponse{User: &userv1.User{
+	return &userv1.GetUserResponse{User: toProtoUser(v)}, nil
+}
+
+func (s *Server) ListUsers(ctx context.Context, req *userv1.ListUsersRequest) (*userv1.ListUsersResponse, error) {
+	page, err := s.app.Queries.ListUsers.Handle(ctx, query.ListUsers{
+		OrganizationID: req.GetOrganizationId(),
+		PageSize:       int(req.GetPageSize()),
+		PageToken:      req.GetPageToken(),
+	})
+	if err != nil {
+		return nil, toStatus(err)
+	}
+
+	users := make([]*userv1.User, len(page.Items))
+	for i, v := range page.Items {
+		users[i] = toProtoUser(v)
+	}
+	return &userv1.ListUsersResponse{Users: users, NextPageToken: page.NextCursor}, nil
+}
+
+func toProtoUser(v query.UserView) *userv1.User {
+	return &userv1.User{
 		Id:             v.ID,
 		OrganizationId: v.OrganizationID,
 		RoleId:         v.RoleID,
@@ -49,5 +70,5 @@ func (s *Server) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*user
 		FirstName:      v.FirstName,
 		LastName:       v.LastName,
 		CreatedAt:      timestamppb.New(v.CreatedAt),
-	}}, nil
+	}
 }

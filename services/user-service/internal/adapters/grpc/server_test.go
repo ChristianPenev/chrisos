@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"slices"
 	"strings"
@@ -163,7 +164,10 @@ func newTestClient(t *testing.T, store *memoryStore) userv1.UserServiceClient {
 
 	app := application.Application{
 		Commands: application.Commands{CreateOrganization: command.NewCreateOrganizationHandler(store)},
-		Queries:  application.Queries{GetUser: query.NewGetUserHandler(store)},
+		Queries: application.Queries{
+			GetUser:   query.NewGetUserHandler(store),
+			ListUsers: query.NewListUsersHandler(store),
+		},
 	}
 
 	lis := bufconn.Listen(1024 * 1024)
@@ -256,6 +260,84 @@ func TestUserServiceServer(t *testing.T) {
 		_, err := client.GetUser(ctx, &userv1.GetUserRequest{Id: user.NewID().String()})
 		assertCode(t, err, codes.NotFound)
 	})
+}
+
+func TestListUsers(t *testing.T) {
+	ctx := context.Background()
+	store := newMemoryStore()
+	client := newTestClient(t, store)
+
+	acme, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+		OrganizationName: "Acme", OwnerEmail: "owner@acme.com", OwnerFirstName: "Jane", OwnerLastName: "Doe",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+		OrganizationName: "Other", OwnerEmail: "owner@other.com", OwnerFirstName: "John", OwnerLastName: "Roe",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	owner, err := client.GetUser(ctx, &userv1.GetUserRequest{Id: acme.GetOwnerUserId()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	orgID, _ := organization.ParseID(acme.GetOrganizationId())
+	roleID, _ := role.ParseID(owner.GetUser().GetRoleId())
+
+	want := []string{acme.GetOwnerUserId()}
+	for i := range 4 {
+		email, _ := user.NewEmail(fmt.Sprintf("member%d@acme.com", i))
+		u, err := user.NewUser(orgID, roleID, email, "Member", "Acme")
+		if err != nil {
+			t.Fatal(err)
+		}
+		store.users[u.ID()] = u
+		want = append(want, u.ID().String())
+	}
+	slices.Sort(want)
+
+	t.Run("pages through the organization's users", func(t *testing.T) {
+		var got []string
+		token := ""
+		for range 10 {
+			resp, err := client.ListUsers(ctx, &userv1.ListUsersRequest{
+				OrganizationId: acme.GetOrganizationId(), PageSize: 2, PageToken: token,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, u := range resp.GetUsers() {
+				if u.GetOrganizationId() != acme.GetOrganizationId() || u.GetCreatedAt().AsTime().IsZero() {
+					t.Fatalf("unexpected user %+v", u)
+				}
+				got = append(got, u.GetId())
+			}
+			token = resp.GetNextPageToken()
+			if token == "" {
+				break
+			}
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("got  %v\nwant %v", got, want)
+		}
+	})
+
+	invalid := []struct {
+		name string
+		req  *userv1.ListUsersRequest
+	}{
+		{"malformed organization ID", &userv1.ListUsersRequest{OrganizationId: "nope"}},
+		{"negative page size", &userv1.ListUsersRequest{OrganizationId: acme.GetOrganizationId(), PageSize: -1}},
+		{"garbage page token", &userv1.ListUsersRequest{OrganizationId: acme.GetOrganizationId(), PageToken: "garbage"}},
+	}
+	for _, tt := range invalid {
+		t.Run(tt.name+" is InvalidArgument", func(t *testing.T) {
+			_, err := client.ListUsers(ctx, tt.req)
+			assertCode(t, err, codes.InvalidArgument)
+		})
+	}
 }
 
 func TestUnexpectedErrorsAreHidden(t *testing.T) {
