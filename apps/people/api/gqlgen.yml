@@ -1,0 +1,20 @@
+schema:
+  - schema/*.graphqls
+
+exec:
+  package: generated
+  layout: single-file
+  filename: internal/adapters/graphql/generated/generated.go
+
+model:
+  package: model
+  filename: internal/adapters/graphql/model/models_gen.go
+
+resolver:
+  package: graphql
+  layout: follow-schema
+  dir: internal/adapters/graphql
+  filename_template: "{name}.resolvers.go"
+
+autobind:
+  - github.com/ChristianPenev/chrisos/apps/people/api/internal/app

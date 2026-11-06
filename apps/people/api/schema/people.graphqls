@@ -1,0 +1,23 @@
+scalar Time
+
+type User {
+  id: ID!
+  email: String!
+  firstName: String!
+  lastName: String!
+  createdAt: Time!
+}
+
+input RegisterUserInput {
+  email: String!
+  firstName: String!
+  lastName: String!
+}
+
+type Query {
+  user(id: ID!): User
+}
+
+type Mutation {
+  registerUser(input: RegisterUserInput!): User!
+}
