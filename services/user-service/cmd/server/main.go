@@ -2,15 +2,21 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
 	"os/signal"
 	"syscall"
 
-	"github.com/ChristianPenev/chrisos/pkg/httpserver"
+	"google.golang.org/grpc"
+
+	userv1 "github.com/ChristianPenev/chrisos/gen/go/user/v1"
+	"github.com/ChristianPenev/chrisos/pkg/grpcserver"
 	"github.com/ChristianPenev/chrisos/pkg/postgres"
+	grpcadapter "github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/grpc"
+	pgadapter "github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/postgres"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/postgres/migrations"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/application"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/command"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/query"
 )
 
 func main() {
@@ -20,7 +26,6 @@ func main() {
 }
 
 func run() error {
-	// ctx is cancelled on SIGINT (Ctrl+C) or SIGTERM (sent by Kubernetes on pod stop).
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -46,11 +51,16 @@ func run() error {
 		return err
 	}
 
-	mux := http.NewServeMux()
+	app := application.Application{
+		Commands: application.Commands{
+			RegisterUser: command.NewRegisterUserHandler(pgadapter.NewUserRepository(db)),
+		},
+		Queries: application.Queries{
+			GetUser: query.NewGetUserHandler(pgadapter.NewUserReader(db)),
+		},
+	}
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "ChrisOS User Service OK")
+	return grpcserver.Run(ctx, ":9090", func(s grpc.ServiceRegistrar) {
+		userv1.RegisterUserServiceServer(s, grpcadapter.NewServer(app))
 	})
-
-	return httpserver.Run(ctx, ":8080", mux)
 }

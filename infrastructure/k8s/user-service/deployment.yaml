@@ -19,17 +19,16 @@ spec:
                   image: chrisos/user-service:0.0.1
                   imagePullPolicy: IfNotPresent
                   ports:
-                      - containerPort: 8080
+                      - name: grpc
+                        containerPort: 9090
                   readinessProbe:
-                      httpGet:
-                          path: /health
-                          port: 8080
+                      grpc:
+                          port: 9090
                       initialDelaySeconds: 2
                       periodSeconds: 5
                   livenessProbe:
-                      httpGet:
-                          path: /health
-                          port: 8080
+                      grpc:
+                          port: 9090
                       initialDelaySeconds: 5
                       periodSeconds: 10
                   env:
