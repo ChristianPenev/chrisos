@@ -3,11 +3,12 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
+import { cn } from "@lib/utils";
 import { Button } from "@shadcn/button";
 
 import type { CopyButtonProps } from "./contracts";
 
-export function CopyButton({ value, label }: CopyButtonProps) {
+export function CopyButton({ value, label, compact = false, className }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -17,9 +18,24 @@ export function CopyButton({ value, label }: CopyButtonProps) {
   }
 
   return (
-    <Button data-slot="copy-button" variant="ghost" size="sm" onClick={copy} aria-label={label}>
-      {copied ? <Check /> : <Copy />}
-      <span aria-live="polite">{copied ? "Copied" : "Copy"}</span>
+    <Button
+      data-slot="copy-button"
+      data-copied={copied || undefined}
+      variant="ghost"
+      size={compact ? "icon-sm" : "sm"}
+      onClick={copy}
+      aria-label={label}
+      title={compact ? label : undefined}
+      className={cn("text-muted-foreground hover:text-foreground", className)}
+    >
+      {copied ? <Check className="text-foreground" /> : <Copy />}
+      {compact ? (
+        <span aria-live="polite" className="sr-only">
+          {copied ? "Copied" : ""}
+        </span>
+      ) : (
+        <span aria-live="polite">{copied ? "Copied" : "Copy"}</span>
+      )}
     </Button>
   );
 }

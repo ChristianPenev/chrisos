@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Instrument_Sans } from "next/font/google";
+
+import { AppHeader } from "@components/layout/AppHeader";
+
 import "./globals.css";
 
-const sans = Geist({
+const sans = Instrument_Sans({
   variable: "--font-sans",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
+  axes: ["wdth"],
 });
 
 const mono = Geist_Mono({
@@ -12,22 +16,17 @@ const mono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const display = Bricolage_Grotesque({
-  variable: "--font-display",
-  subsets: ["latin", "latin-ext"],
-});
-
 export const metadata: Metadata = {
-  title: "People",
+  title: { default: "People", template: "%s – People" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${sans.variable} ${mono.variable} ${display.variable} h-full antialiased`}
-    >
-      <body className="flex min-h-full flex-col">{children}</body>
+    <html lang="en" className={`${sans.variable} ${mono.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
+        <AppHeader />
+        {children}
+      </body>
     </html>
   );
 }

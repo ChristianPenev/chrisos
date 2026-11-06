@@ -1,13 +1,13 @@
 ---
 name: data-fetching
-description: GraphQL data in people/web — writing .graphql operations next to the domain, running codegen (near-operation-file → *.generated.ts typed documents), the planned Apollo setup (per-request server client via React cache(), client provider for mutations), choosing 'use cache' + cacheLife vs Suspense streaming under Cache Components, notFound vs error, server-only import rules, and the Apollo streaming ban. Use when adding a query or mutation, wiring a view to the API, regenerating types, or hitting blocking-route, "depends on next/headers", or codegen errors.
+description: GraphQL data in people/web — writing .graphql operations next to the domain, running codegen (near-operation-file → *.generated.ts typed documents), the Apollo server client (per-request via React cache()), data functions + API error codes, cursor pagination via server actions, choosing 'use cache' + cacheLife vs Suspense streaming under Cache Components, notFound vs error, server-only import rules, and the Apollo streaming ban. Use when adding a query or mutation, wiring a view to the API, regenerating types, or hitting blocking-route, "depends on next/headers", or codegen errors.
 ---
 
 # Data fetching
 
-> **Status:** the API is not wired yet. `UserProfileView` reads `domains/user/mocks/`. The
-> codegen config is live; the Apollo client files described under "Apollo" don't exist yet.
-> Create them in that shape when wiring the first query, then update this note.
+> **Status:** the server client and the org users list
+> (`/organizations/[organizationId]/users`) are wired. `UserProfileView` still reads
+> `domains/user/mocks/`. There's no client-side Apollo yet.
 
 ## GraphQL operations + codegen
 
@@ -46,21 +46,35 @@ Rules from the Next docs (`node_modules/next/dist/docs/01-app/01-getting-started
 - Always pair `'use cache'` with `cacheLife`. Mutations call `revalidateTag`/`updateTag` for the
   tags they affect.
 
-## Apollo (planned shape)
+## Apollo
 
-- **Server**: `src/lib/apollo/serverClient.ts` exports `getClient`, wrapped in React `cache()`
-  so one request shares one `ApolloClient` (`HttpLink` to `API_URL`/graphql, `InMemoryCache`).
-  It's server-only: import it by direct path, never from a barrel.
-- **Data functions** live in the domain, e.g. `domains/user/data/getUser.ts`:
-  ```ts
-  export async function getUser(id: string) {
-    const client = await getClient();
-    const { data } = await client.query({ query: UserProfileDocument, variables: { id } });
-    return data?.user ?? null;
-  }
-  ```
-  The view's async content component calls it, renders `notFound()` on `null`, and passes the
-  result to presentational components as props. `generateMetadata` calls the same function.
+- **Server**: `getClient()` from `@lib/apollo/serverClient` is wrapped in React `cache()`, so
+  one request shares one `ApolloClient` (`HttpLink` to `${API_URL}/graphql`). It's server-only:
+  import it by direct path, never from a barrel.
+- **Data functions** live in `domains/<domain>/data/`. The model is `getOrganizationUsers.ts`.
+  A data function runs the typed document, maps the result into a `contracts.ts` shape, and
+  turns _expected_ API errors into a return value:
+  - `client.query` rejects with `CombinedGraphQLErrors` on GraphQL errors (Apollo 4 default
+    `errorPolicy: "none"`).
+  - Check codes with `hasApiErrorCode(error, ApiErrorCode.X)` from `@lib/apollo/errors`. The
+    codes mirror `../api/internal/adapters/graphql/errors.go`: `NOT_FOUND`, `BAD_USER_INPUT`,
+    `CONFLICT`, `INTERNAL`.
+  - Return `null` for "this entity doesn't exist / the id is malformed" (`NOT_FOUND`,
+    `BAD_USER_INPUT` on an id). The view calls `notFound()`. Re-throw everything else, so it
+    reaches `error.tsx`.
+  - `generateMetadata` calls the same data function.
+- **Notice on status codes**: `notFound()` inside a Suspense boundary runs after the shell has
+  streamed, so the response stays HTTP 200. Next swaps in `not-found.tsx` and adds
+  `<meta name="robots" content="noindex">`. That's expected under Partial Prerendering.
+- **Cursor pagination ("Load more")**: render the first page on the server. Pass it as
+  `initialPage` to a `"use client"` list that holds the accumulated rows. That list fetches
+  further pages through a **server action** in `domains/<domain>/actions/` (`"use server"`,
+  calls the same data function). Model: `PaginatedUserList` + `loadOrganizationUsers`. The
+  browser never calls the API, so no client Apollo, CORS or public API URL is needed. Server
+  actions are public endpoints, so check argument types at runtime.
+- **Dates in client-rendered rows**: use `formatDate` from `@lib/formatDate` (fixed `UTC`
+  zone). An `Intl` formatter without a `timeZone` renders differently on server and browser,
+  which breaks hydration.
 - **Client**: only add an `ApolloProvider` (in a `"use client"` provider in `src/app/`) when a
   client component needs `useMutation`/`useQuery` from `@apollo/client/react`. Reads that the
   server can do stay on the server.

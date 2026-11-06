@@ -43,7 +43,14 @@ const eslintConfig = defineConfig([
     files: ["src/components/shadcn/**"],
     rules: { "max-len": "off" },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "src/generated/**"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "src/generated/**",
+    "**/*.generated.ts",
+  ]),
 ]);
 
 export default eslintConfig;

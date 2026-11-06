@@ -38,6 +38,7 @@ src/
 ├── app/                         # routes only: page.tsx / layout.tsx / not-found.tsx stay thin
 ├── components/
 │   ├── shadcn/                  # primitives pulled via the shadcn CLI (lowercase files)
+│   ├── layout/<Name>/           # app chrome + page scaffolding (AppHeader, PageContainer)
 │   └── ui/<Name>/               # our own generic components, no domain knowledge
 ├── domains/<domain>/
 │   ├── contracts.ts             # all props/data types for the domain
