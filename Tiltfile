@@ -17,4 +17,5 @@ k8s_yaml([
 k8s_resource(
     'user-service',
     port_forwards=9090,
+    resource_deps=['postgres'],
 )
