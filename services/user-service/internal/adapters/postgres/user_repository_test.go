@@ -57,8 +57,7 @@ func seedOrganization(t *testing.T, db *gorm.DB) (organization.ID, role.ID) {
 		if err := NewOrganizationRepository(tx).Create(context.Background(), org); err != nil {
 			return err
 		}
-		return tx.Exec("INSERT INTO roles (id, organization_id, name, owner, created_at) VALUES (?, ?, ?, ?, ?)",
-			owner.ID().String(), org.ID().String(), owner.Name(), owner.IsOwner(), owner.CreatedAt()).Error
+		return NewRoleRepository(tx).Create(context.Background(), owner)
 	})
 	if err != nil {
 		t.Fatal(err)
