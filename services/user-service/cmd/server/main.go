@@ -53,7 +53,7 @@ func run() error {
 
 	app := application.Application{
 		Commands: application.Commands{
-			RegisterUser: command.NewRegisterUserHandler(pgadapter.NewUserRepository(db)),
+			CreateOrganization: command.NewCreateOrganizationHandler(pgadapter.NewTransactor(db)),
 		},
 		Queries: application.Queries{
 			GetUser: query.NewGetUserHandler(pgadapter.NewUserReader(db)),

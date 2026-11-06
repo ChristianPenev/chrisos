@@ -11,7 +11,7 @@ type Application struct {
 }
 
 type Commands struct {
-	RegisterUser command.RegisterUserHandler
+	CreateOrganization command.CreateOrganizationHandler
 }
 
 type Queries struct {
