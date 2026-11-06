@@ -4,6 +4,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/organization"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/role"
 )
 
 func TestNewEmail(t *testing.T) {
@@ -42,14 +45,22 @@ func TestNewEmail(t *testing.T) {
 
 func TestNewUser(t *testing.T) {
 	email, _ := NewEmail("jane@example.com")
+	orgID := organization.NewID()
+	roleID := role.NewID()
 
 	t.Run("valid", func(t *testing.T) {
-		u, err := NewUser(email, "  Jane ", "Doe")
+		u, err := NewUser(orgID, roleID, email, "  Jane ", "Doe")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if u.ID() == (ID{}) {
 			t.Error("ID not generated")
+		}
+		if u.OrganizationID() != orgID {
+			t.Errorf("OrganizationID() = %v, want %v", u.OrganizationID(), orgID)
+		}
+		if u.RoleID() != roleID {
+			t.Errorf("RoleID() = %v, want %v", u.RoleID(), roleID)
 		}
 		if u.FirstName() != "Jane" {
 			t.Errorf("first name not trimmed: %q", u.FirstName())
@@ -61,23 +72,50 @@ func TestNewUser(t *testing.T) {
 
 	tests := []struct {
 		name      string
+		orgID     organization.ID
+		roleID    role.ID
 		email     Email
 		firstName string
 		lastName  string
 		wantErr   error
 	}{
-		{"empty first name", email, " ", "Doe", ErrInvalidFirstName},
-		{"empty last name", email, "Jane", "", ErrInvalidLastName},
-		{"too long first name", email, strings.Repeat("ж", 101), "Doe", ErrInvalidFirstName},
-		{"zero email", Email{}, "Jane", "Doe", ErrInvalidEmail},
+		{"zero organization", organization.ID{}, roleID, email, "Jane", "Doe", organization.ErrInvalidID},
+		{"zero role", orgID, role.ID{}, email, "Jane", "Doe", role.ErrInvalidID},
+		{"empty first name", orgID, roleID, email, " ", "Doe", ErrInvalidFirstName},
+		{"empty last name", orgID, roleID, email, "Jane", "", ErrInvalidLastName},
+		{"too long first name", orgID, roleID, email, strings.Repeat("ж", 101), "Doe", ErrInvalidFirstName},
+		{"zero email", orgID, roleID, Email{}, "Jane", "Doe", ErrInvalidEmail},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewUser(tt.email, tt.firstName, tt.lastName)
+			_, err := NewUser(tt.orgID, tt.roleID, tt.email, tt.firstName, tt.lastName)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("want %v, got %v", tt.wantErr, err)
 			}
 		})
+	}
+}
+
+func TestChangeRole(t *testing.T) {
+	email, _ := NewEmail("jane@example.com")
+	u, err := NewUser(organization.NewID(), role.NewID(), email, "Jane", "Doe")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newRole := role.NewID()
+	if err := u.ChangeRole(newRole); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if u.RoleID() != newRole {
+		t.Errorf("RoleID() = %v, want %v", u.RoleID(), newRole)
+	}
+
+	if err := u.ChangeRole(role.ID{}); !errors.Is(err, role.ErrInvalidID) {
+		t.Errorf("err = %v, want %v", err, role.ErrInvalidID)
+	}
+	if u.RoleID() != newRole {
+		t.Errorf("failed change replaced role with %v", u.RoleID())
 	}
 }
 
