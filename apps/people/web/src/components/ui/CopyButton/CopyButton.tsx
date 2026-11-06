@@ -3,9 +3,11 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@shadcn/button";
 
-export function CopyButton({ value, label }: { value: string; label: string }) {
+import type { CopyButtonProps } from "./contracts";
+
+export function CopyButton({ value, label }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -15,7 +17,7 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
   }
 
   return (
-    <Button variant="ghost" size="sm" onClick={copy} aria-label={label}>
+    <Button data-slot="copy-button" variant="ghost" size="sm" onClick={copy} aria-label={label}>
       {copied ? <Check /> : <Copy />}
       <span aria-live="polite">{copied ? "Copied" : "Copy"}</span>
     </Button>

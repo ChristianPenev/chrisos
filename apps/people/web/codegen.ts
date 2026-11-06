@@ -3,7 +3,7 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 const config: CodegenConfig = {
   overwrite: true,
   schema: "../api/schema/*.graphqls",
-  documents: ["src/graphql/**/*.graphql"],
+  documents: ["src/domains/**/*.graphql"],
   ignoreNoDocuments: true,
   config: {
     inputValueDeprecation: true,
@@ -15,11 +15,11 @@ const config: CodegenConfig = {
     "src/generated/types.ts": {
       plugins: ["typescript"],
     },
-    "src/graphql/": {
+    "src/": {
       preset: "near-operation-file",
       presetConfig: {
         extension: ".generated.ts",
-        baseTypesPath: "../generated/types",
+        baseTypesPath: "generated/types.ts",
       },
       plugins: ["typescript-operations", "typed-document-node"],
     },

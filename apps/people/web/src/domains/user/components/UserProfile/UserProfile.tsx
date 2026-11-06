@@ -1,30 +1,32 @@
-import { CopyButton } from "@/components/users/copy-button";
-import { Monogram } from "@/components/users/monogram";
-
-export type UserProfileData = {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  createdAt: string;
-};
+import { Monogram } from "@domains/user/components/Monogram";
+import type { UserProfileProps } from "@domains/user/contracts";
+import { cn } from "@lib/utils";
+import { CopyButton } from "@ui/CopyButton";
 
 const addedOn = new Intl.DateTimeFormat("en-GB", { dateStyle: "long" });
 
-export function UserProfile({ user }: { user: UserProfileData }) {
+export function UserProfile({ user }: UserProfileProps) {
   const fullName = `${user.firstName} ${user.lastName}`;
 
   return (
-    <article className="flex flex-col gap-10">
+    <article data-slot="user-profile" className="flex flex-col gap-10">
       <header className="flex items-center gap-5">
         <Monogram seed={user.id} firstName={user.firstName} lastName={user.lastName} />
         <div className="min-w-0">
-          <h1 className="font-heading text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+          <h1
+            className={cn(
+              "font-heading text-4xl font-semibold tracking-tight text-balance",
+              "sm:text-5xl",
+            )}
+          >
             {fullName}
           </h1>
           <a
             href={`mailto:${user.email}`}
-            className="mt-1 block truncate text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            className={cn(
+              "mt-1 block truncate text-muted-foreground underline-offset-4",
+              "hover:text-foreground hover:underline",
+            )}
           >
             {user.email}
           </a>

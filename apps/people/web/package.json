@@ -9,7 +9,11 @@
     "lint": "eslint",
     "codegen": "graphql-codegen --config codegen.ts",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
-    "codegen:check": "graphql-codegen --config codegen.ts --check"
+    "codegen:check": "graphql-codegen --config codegen.ts --check",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@apollo/client": "^4.3.7",
@@ -36,6 +40,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.10",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

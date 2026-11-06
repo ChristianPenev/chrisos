@@ -19,7 +19,13 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@components/*": ["./src/components/*"],
+      "@shadcn/*": ["./src/components/shadcn/*"],
+      "@ui/*": ["./src/components/ui/*"],
+      "@domains/*": ["./src/domains/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@generated/*": ["./src/generated/*"]
     }
   },
   "include": [

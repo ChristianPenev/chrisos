@@ -1,8 +1,13 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@shadcn/skeleton";
 
 export function UserProfileSkeleton() {
   return (
-    <div className="flex flex-col gap-10" aria-busy aria-label="Loading user">
+    <div
+      data-slot="user-profile-skeleton"
+      className="flex flex-col gap-10"
+      aria-busy
+      aria-label="Loading user"
+    >
       <div className="flex items-center gap-5">
         <Skeleton className="size-16 rounded-2xl" />
         <div className="flex flex-col gap-2">
