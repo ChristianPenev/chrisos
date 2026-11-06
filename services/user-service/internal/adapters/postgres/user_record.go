@@ -22,7 +22,7 @@ type userRecord struct {
 
 func (userRecord) TableName() string { return "users" }
 
-func fromDomain(u *user.User) userRecord {
+func userFromDomain(u *user.User) userRecord {
 	return userRecord{
 		ID:             uuid.UUID(u.ID()),
 		OrganizationID: uuid.UUID(u.OrganizationID()),

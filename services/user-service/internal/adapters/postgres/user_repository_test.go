@@ -54,8 +54,7 @@ func seedOrganization(t *testing.T, db *gorm.DB) (organization.ID, role.ID) {
 	owner := role.NewOwnerRole(org.ID())
 
 	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("INSERT INTO organizations (id, name, created_at) VALUES (?, ?, ?)",
-			org.ID().String(), org.Name(), org.CreatedAt()).Error; err != nil {
+		if err := NewOrganizationRepository(tx).Create(context.Background(), org); err != nil {
 			return err
 		}
 		return tx.Exec("INSERT INTO roles (id, organization_id, name, owner, created_at) VALUES (?, ?, ?, ?, ?)",

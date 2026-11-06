@@ -27,7 +27,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 }
 
 func (r *UserRepository) Create(ctx context.Context, u *user.User) error {
-	rec := fromDomain(u)
+	rec := userFromDomain(u)
 	err := r.db.WithContext(ctx).Create(&rec).Error
 
 	var pgErr *pgconn.PgError
