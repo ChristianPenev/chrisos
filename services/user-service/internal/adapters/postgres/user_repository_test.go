@@ -12,6 +12,8 @@ import (
 
 	pgshared "github.com/ChristianPenev/chrisos/pkg/postgres"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/postgres/migrations"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/organization"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/role"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/user"
 )
 
@@ -36,20 +38,42 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err := pgshared.Migrate(context.Background(), sqlDB, migrations.FS); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Exec("TRUNCATE users").Error; err != nil {
+	if err := db.Exec("TRUNCATE users, role_permissions, roles, organizations").Error; err != nil {
 		t.Fatal(err)
 	}
 
 	return db
 }
 
-func newUser(t *testing.T, rawEmail string) *user.User {
+func seedOrganization(t *testing.T, db *gorm.DB) (organization.ID, role.ID) {
+	t.Helper()
+	org, err := organization.NewOrganization("Acme")
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner := role.NewOwnerRole(org.ID())
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("INSERT INTO organizations (id, name, created_at) VALUES (?, ?, ?)",
+			org.ID().String(), org.Name(), org.CreatedAt()).Error; err != nil {
+			return err
+		}
+		return tx.Exec("INSERT INTO roles (id, organization_id, name, owner, created_at) VALUES (?, ?, ?, ?, ?)",
+			owner.ID().String(), org.ID().String(), owner.Name(), owner.IsOwner(), owner.CreatedAt()).Error
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return org.ID(), owner.ID()
+}
+
+func newUser(t *testing.T, orgID organization.ID, roleID role.ID, rawEmail string) *user.User {
 	t.Helper()
 	email, err := user.NewEmail(rawEmail)
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := user.NewUser(email, "Jane", "Doe")
+	u, err := user.NewUser(orgID, roleID, email, "Jane", "Doe")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,6 +83,8 @@ func newUser(t *testing.T, rawEmail string) *user.User {
 func assertSameUser(t *testing.T, got, want *user.User) {
 	t.Helper()
 	if got.ID() != want.ID() ||
+		got.OrganizationID() != want.OrganizationID() ||
+		got.RoleID() != want.RoleID() ||
 		got.Email() != want.Email() ||
 		got.FirstName() != want.FirstName() ||
 		got.LastName() != want.LastName() ||
@@ -69,8 +95,10 @@ func assertSameUser(t *testing.T, got, want *user.User) {
 
 func TestUserRepository(t *testing.T) {
 	ctx := context.Background()
-	repo := NewUserRepository(newTestDB(t))
-	jane := newUser(t, "jane@example.com")
+	db := newTestDB(t)
+	repo := NewUserRepository(db)
+	orgID, roleID := seedOrganization(t, db)
+	jane := newUser(t, orgID, roleID, "jane@example.com")
 
 	if err := repo.Create(ctx, jane); err != nil {
 		t.Fatalf("Create: %v", err)
@@ -93,7 +121,7 @@ func TestUserRepository(t *testing.T) {
 	})
 
 	t.Run("Create with taken email", func(t *testing.T) {
-		err := repo.Create(ctx, newUser(t, "jane@example.com"))
+		err := repo.Create(ctx, newUser(t, orgID, roleID, "jane@example.com"))
 		if !errors.Is(err, user.ErrEmailAlreadyExists) {
 			t.Fatalf("want ErrEmailAlreadyExists, got %v", err)
 		}
@@ -107,7 +135,7 @@ func TestUserRepository(t *testing.T) {
 	})
 
 	t.Run("FindByEmail unknown", func(t *testing.T) {
-		_, err := repo.FindByEmail(ctx, newUser(t, "nobody@example.com").Email())
+		_, err := repo.FindByEmail(ctx, newUser(t, orgID, roleID, "nobody@example.com").Email())
 		if !errors.Is(err, user.ErrUserNotFound) {
 			t.Fatalf("want ErrUserNotFound, got %v", err)
 		}

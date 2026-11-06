@@ -13,7 +13,8 @@ func TestUserReader(t *testing.T) {
 	db := newTestDB(t)
 	reader := NewUserReader(db)
 
-	jane := newUser(t, "jane@example.com")
+	orgID, roleID := seedOrganization(t, db)
+	jane := newUser(t, orgID, roleID, "jane@example.com")
 	if err := NewUserRepository(db).Create(ctx, jane); err != nil {
 		t.Fatal(err)
 	}
