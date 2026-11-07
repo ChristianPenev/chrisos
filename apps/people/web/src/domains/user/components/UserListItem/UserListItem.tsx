@@ -35,6 +35,17 @@ export function UserListItem({ user }: UserListItemProps) {
           </div>
         </div>
       </td>
+      <td className="px-3 py-3 text-[0.8125rem]">
+        <span
+          title={user.role.name}
+          className={cn(
+            "block truncate",
+            user.role.isOwner ? "font-medium text-foreground" : "text-muted-foreground",
+          )}
+        >
+          {user.role.name}
+        </span>
+      </td>
       <td
         className={cn(
           "hidden px-3 py-3 whitespace-nowrap sm:table-cell",

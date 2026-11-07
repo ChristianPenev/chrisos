@@ -4,6 +4,11 @@ fragment UserListItem on User {
   firstName
   lastName
   createdAt
+  role {
+    id
+    name
+    isOwner
+  }
 }
 
 query OrganizationUsers($organizationId: ID!, $first: Int, $after: String) {

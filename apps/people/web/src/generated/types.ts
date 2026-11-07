@@ -57,6 +57,16 @@ export type QueryUsersArgs = {
   organizationId: Scalars['ID']['input'];
 };
 
+export type Role = {
+  __typename?: 'Role';
+  createdAt: Scalars['Time']['output'];
+  id: Scalars['ID']['output'];
+  isOwner: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['ID']['output'];
+  permissions: Array<Scalars['String']['output']>;
+};
+
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['Time']['output'];
@@ -65,6 +75,7 @@ export type User = {
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
   organizationId: Scalars['ID']['output'];
+  role: Role;
   roleId: Scalars['ID']['output'];
 };
 

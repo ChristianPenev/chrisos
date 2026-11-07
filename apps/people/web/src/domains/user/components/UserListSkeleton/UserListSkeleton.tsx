@@ -30,6 +30,7 @@ export function UserListSkeleton() {
               <Skeleton className={`h-3.5 ${name}`} />
               <Skeleton className={`h-3 ${email}`} />
             </div>
+            <Skeleton className="h-3 w-16 sm:me-20 sm:w-24" />
             <Skeleton className="hidden h-3 w-24 sm:block" />
           </div>
         ))}
