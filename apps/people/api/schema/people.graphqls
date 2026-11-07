@@ -8,6 +8,16 @@ type User {
   firstName: String!
   lastName: String!
   createdAt: Time!
+  role: Role!
+}
+
+type Role {
+  id: ID!
+  organizationId: ID!
+  name: String!
+  isOwner: Boolean!
+  permissions: [String!]!
+  createdAt: Time!
 }
 
 input CreateOrganizationInput {

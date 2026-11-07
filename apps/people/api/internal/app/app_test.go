@@ -13,6 +13,15 @@ type fakeUserService struct {
 	gotList   ListUsersInput
 }
 
+func (f *fakeUserService) GetRoles(_ context.Context, ids []string) ([]*Role, error) {
+	f.calls = append(f.calls, "GetRoles")
+	roles := make([]*Role, len(ids))
+	for i, id := range ids {
+		roles[i] = &Role{ID: id}
+	}
+	return roles, nil
+}
+
 func (f *fakeUserService) ListUsers(_ context.Context, in ListUsersInput) (*UserPage, error) {
 	f.calls = append(f.calls, "ListUsers")
 	f.gotList = in
@@ -82,5 +91,15 @@ func TestListUsersPassesInputThrough(t *testing.T) {
 	}
 	if len(page.Users) != 1 || page.NextCursor != "next" {
 		t.Errorf("got %+v", page)
+	}
+}
+
+func TestGetRolesPassesIDsThrough(t *testing.T) {
+	roles, err := New(&fakeUserService{users: map[string]*User{}}).GetRoles(context.Background(), []string{"r1", "r2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(roles) != 2 || roles[0].ID != "r1" || roles[1].ID != "r2" {
+		t.Errorf("got %+v", roles)
 	}
 }

@@ -34,3 +34,7 @@ func (a *Application) GetUser(ctx context.Context, id string) (*User, error) {
 func (a *Application) ListUsers(ctx context.Context, in ListUsersInput) (*UserPage, error) {
 	return a.users.ListUsers(ctx, in)
 }
+
+func (a *Application) GetRoles(ctx context.Context, ids []string) ([]*Role, error) {
+	return a.users.GetRoles(ctx, ids)
+}

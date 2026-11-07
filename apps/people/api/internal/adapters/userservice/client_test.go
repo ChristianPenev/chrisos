@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"net"
+	"slices"
 	"testing"
 	"time"
 
@@ -25,6 +26,21 @@ type fakeUserService struct {
 	delay time.Duration
 	got   *userv1.CreateOrganizationRequest
 	list  *userv1.ListUsersRequest
+}
+
+func (f *fakeUserService) BatchGetRoles(ctx context.Context, req *userv1.BatchGetRolesRequest) (*userv1.BatchGetRolesResponse, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	var roles []*userv1.Role
+	for _, id := range req.GetIds() {
+		roles = append(roles, &userv1.Role{
+			Id: id, OrganizationId: "org-1", Name: "Support", Owner: false,
+			Permissions: []string{"members.invite"},
+			CreatedAt:   timestamppb.New(time.Date(2026, 11, 6, 10, 0, 0, 0, time.UTC)),
+		})
+	}
+	return &userv1.BatchGetRolesResponse{Roles: roles}, nil
 }
 
 func (f *fakeUserService) ListUsers(ctx context.Context, req *userv1.ListUsersRequest) (*userv1.ListUsersResponse, error) {
@@ -150,6 +166,22 @@ func TestListUsersClampsHugePageSize(t *testing.T) {
 	}
 	if fake.list.GetPageSize() != math.MaxInt32 {
 		t.Errorf("page size = %d, want %d", fake.list.GetPageSize(), int32(math.MaxInt32))
+	}
+}
+
+func TestGetRoles(t *testing.T) {
+	roles, err := newTestClient(t, &fakeUserService{}).GetRoles(context.Background(), []string{"role-1", "role-2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(roles) != 2 {
+		t.Fatalf("got %d roles", len(roles))
+	}
+	r := roles[1]
+	if r.ID != "role-2" || r.OrganizationID != "org-1" || r.Name != "Support" || r.IsOwner ||
+		!slices.Equal(r.Permissions, []string{"members.invite"}) ||
+		!r.CreatedAt.Equal(time.Date(2026, 11, 6, 10, 0, 0, 0, time.UTC)) {
+		t.Errorf("role not mapped: %+v", r)
 	}
 }
 

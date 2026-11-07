@@ -78,6 +78,29 @@ func (c *Client) ListUsers(ctx context.Context, in app.ListUsersInput) (*app.Use
 	return &app.UserPage{Users: users, NextCursor: resp.GetNextPageToken()}, nil
 }
 
+func (c *Client) GetRoles(ctx context.Context, ids []string) ([]*app.Role, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	resp, err := c.users.BatchGetRoles(ctx, &userv1.BatchGetRolesRequest{Ids: ids})
+	if err != nil {
+		return nil, translate(err)
+	}
+
+	roles := make([]*app.Role, len(resp.GetRoles()))
+	for i, r := range resp.GetRoles() {
+		roles[i] = &app.Role{
+			ID:             r.GetId(),
+			OrganizationID: r.GetOrganizationId(),
+			Name:           r.GetName(),
+			IsOwner:        r.GetOwner(),
+			Permissions:    r.GetPermissions(),
+			CreatedAt:      r.GetCreatedAt().AsTime(),
+		}
+	}
+	return roles, nil
+}
+
 func fromProtoUser(u *userv1.User) *app.User {
 	return &app.User{
 		ID:             u.GetId(),

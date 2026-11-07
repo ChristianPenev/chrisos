@@ -38,4 +38,5 @@ type UserService interface {
 	CreateOrganization(ctx context.Context, in CreateOrganizationInput) (CreatedOrganization, error)
 	GetUser(ctx context.Context, id string) (*User, error)
 	ListUsers(ctx context.Context, in ListUsersInput) (*UserPage, error)
+	GetRoles(ctx context.Context, ids []string) ([]*Role, error)
 }

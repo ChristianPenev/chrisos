@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,6 +24,27 @@ type fakeUserService struct {
 	listErr   error
 	gotList   app.ListUsersInput
 	page      *app.UserPage
+
+	mu         sync.Mutex
+	roles      map[string]*app.Role
+	roleCalls  [][]string
+	getRoleErr error
+}
+
+func (f *fakeUserService) GetRoles(_ context.Context, ids []string) ([]*app.Role, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.roleCalls = append(f.roleCalls, slices.Clone(ids))
+	if f.getRoleErr != nil {
+		return nil, f.getRoleErr
+	}
+	var out []*app.Role
+	for _, id := range ids {
+		if r, ok := f.roles[id]; ok {
+			out = append(out, r)
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeUserService) ListUsers(_ context.Context, in app.ListUsersInput) (*app.UserPage, error) {
@@ -210,6 +233,94 @@ func TestUsers(t *testing.T) {
 		fake := &fakeUserService{listErr: fmt.Errorf("%w: %s", app.ErrInvalidInput, "invalid cursor")}
 		resp := do(t, fake, `{ users(organizationId: "org-1", after: "garbage") { nodes { id } } }`)
 		assertErrorCode(t, resp, codeBadUserInput)
+	})
+}
+
+func TestUserRoles(t *testing.T) {
+	owner := &app.Role{ID: "role-owner", Name: "Organization Owner", IsOwner: true, Permissions: []string{"roles.manage"}}
+	support := &app.Role{ID: "role-support", Name: "Support", Permissions: []string{}}
+
+	var users []*app.User
+	for i := range 20 {
+		roleID := support.ID
+		if i%5 == 0 {
+			roleID = owner.ID
+		}
+		users = append(users, &app.User{ID: fmt.Sprintf("user-%d", i), RoleID: roleID})
+	}
+
+	t.Run("one batched call for every role in a list", func(t *testing.T) {
+		fake := &fakeUserService{
+			page:  &app.UserPage{Users: users},
+			roles: map[string]*app.Role{owner.ID: owner, support.ID: support},
+		}
+		resp := do(t, fake, `{ users(organizationId: "org-1", first: 20) { nodes { id role { id name isOwner permissions } } } }`)
+
+		if len(resp.Errors) != 0 {
+			t.Fatalf("unexpected errors: %+v", resp.Errors)
+		}
+		if len(fake.roleCalls) != 1 {
+			t.Fatalf("want 1 GetRoles call, got %d: %v", len(fake.roleCalls), fake.roleCalls)
+		}
+		if got := slices.Sorted(slices.Values(fake.roleCalls[0])); !slices.Equal(got, []string{owner.ID, support.ID}) {
+			t.Fatalf("GetRoles got %v, want each role once", fake.roleCalls[0])
+		}
+
+		var data struct {
+			Nodes []struct {
+				ID   string
+				Role struct {
+					ID      string
+					Name    string
+					IsOwner bool
+				}
+			}
+		}
+		if err := json.Unmarshal(resp.Data["users"], &data); err != nil {
+			t.Fatal(err)
+		}
+		for i, n := range data.Nodes {
+			if n.Role.ID != users[i].RoleID {
+				t.Fatalf("user %s got role %s, want %s", n.ID, n.Role.ID, users[i].RoleID)
+			}
+		}
+		if !data.Nodes[0].Role.IsOwner || data.Nodes[1].Role.Name != "Support" {
+			t.Errorf("roles not mapped: %+v %+v", data.Nodes[0].Role, data.Nodes[1].Role)
+		}
+	})
+
+	t.Run("each request gets fresh loaders", func(t *testing.T) {
+		fake := &fakeUserService{
+			users: map[string]*app.User{"user-1": {ID: "user-1", RoleID: owner.ID}},
+			roles: map[string]*app.Role{owner.ID: owner},
+		}
+		do(t, fake, `{ user(id: "user-1") { role { name } } }`)
+		do(t, fake, `{ user(id: "user-1") { role { name } } }`)
+
+		if len(fake.roleCalls) != 2 {
+			t.Fatalf("want 2 GetRoles calls across 2 requests, got %d", len(fake.roleCalls))
+		}
+	})
+
+	t.Run("missing role is an internal error", func(t *testing.T) {
+		fake := &fakeUserService{
+			users: map[string]*app.User{"user-1": {ID: "user-1", RoleID: "role-gone"}},
+			roles: map[string]*app.Role{},
+		}
+		resp := do(t, fake, `{ user(id: "user-1") { id role { name } } }`)
+		assertErrorCode(t, resp, codeInternal)
+	})
+
+	t.Run("user-service failure is an internal error", func(t *testing.T) {
+		fake := &fakeUserService{
+			users:      map[string]*app.User{"user-1": {ID: "user-1", RoleID: owner.ID}},
+			getRoleErr: errors.New("user-service: connection refused"),
+		}
+		resp := do(t, fake, `{ user(id: "user-1") { role { name } } }`)
+		assertErrorCode(t, resp, codeInternal)
+		if resp.Errors[0].Message != "internal error" {
+			t.Errorf("internal details leaked: %q", resp.Errors[0].Message)
+		}
 	})
 }
 
