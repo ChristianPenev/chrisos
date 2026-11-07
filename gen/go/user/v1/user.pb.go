@@ -434,6 +434,178 @@ func (x *ListUsersResponse) GetNextPageToken() string {
 	return ""
 }
 
+type Role struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Owner          bool                   `protobuf:"varint,4,opt,name=owner,proto3" json:"owner,omitempty"`
+	Permissions    []string               `protobuf:"bytes,5,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Role) Reset() {
+	*x = Role{}
+	mi := &file_user_v1_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Role) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Role) ProtoMessage() {}
+
+func (x *Role) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Role.ProtoReflect.Descriptor instead.
+func (*Role) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Role) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Role) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *Role) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Role) GetOwner() bool {
+	if x != nil {
+		return x.Owner
+	}
+	return false
+}
+
+func (x *Role) GetPermissions() []string {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+func (x *Role) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type BatchGetRolesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ids           []string               `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetRolesRequest) Reset() {
+	*x = BatchGetRolesRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetRolesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetRolesRequest) ProtoMessage() {}
+
+func (x *BatchGetRolesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetRolesRequest.ProtoReflect.Descriptor instead.
+func (*BatchGetRolesRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *BatchGetRolesRequest) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
+type BatchGetRolesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Roles         []*Role                `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetRolesResponse) Reset() {
+	*x = BatchGetRolesResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetRolesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetRolesResponse) ProtoMessage() {}
+
+func (x *BatchGetRolesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetRolesResponse.ProtoReflect.Descriptor instead.
+func (*BatchGetRolesResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *BatchGetRolesResponse) GetRoles() []*Role {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
@@ -469,11 +641,24 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\"`\n" +
 	"\x11ListUsersResponse\x12#\n" +
 	"\x05users\x18\x01 \x03(\v2\r.user.v1.UserR\x05users\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xee\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xc6\x01\n" +
+	"\x04Role\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
+	"\x05owner\x18\x04 \x01(\bR\x05owner\x12 \n" +
+	"\vpermissions\x18\x05 \x03(\tR\vpermissions\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"(\n" +
+	"\x14BatchGetRolesRequest\x12\x10\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids\"<\n" +
+	"\x15BatchGetRolesResponse\x12#\n" +
+	"\x05roles\x18\x01 \x03(\v2\r.user.v1.RoleR\x05roles2\xbe\x02\n" +
 	"\vUserService\x12]\n" +
 	"\x12CreateOrganization\x12\".user.v1.CreateOrganizationRequest\x1a#.user.v1.CreateOrganizationResponse\x12<\n" +
 	"\aGetUser\x12\x17.user.v1.GetUserRequest\x1a\x18.user.v1.GetUserResponse\x12B\n" +
-	"\tListUsers\x12\x19.user.v1.ListUsersRequest\x1a\x1a.user.v1.ListUsersResponseB9Z7github.com/ChristianPenev/chrisos/gen/go/user/v1;userv1b\x06proto3"
+	"\tListUsers\x12\x19.user.v1.ListUsersRequest\x1a\x1a.user.v1.ListUsersResponse\x12N\n" +
+	"\rBatchGetRoles\x12\x1d.user.v1.BatchGetRolesRequest\x1a\x1e.user.v1.BatchGetRolesResponseB9Z7github.com/ChristianPenev/chrisos/gen/go/user/v1;userv1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once
@@ -487,7 +672,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_user_v1_user_proto_goTypes = []any{
 	(*User)(nil),                       // 0: user.v1.User
 	(*CreateOrganizationRequest)(nil),  // 1: user.v1.CreateOrganizationRequest
@@ -496,23 +681,30 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*GetUserResponse)(nil),            // 4: user.v1.GetUserResponse
 	(*ListUsersRequest)(nil),           // 5: user.v1.ListUsersRequest
 	(*ListUsersResponse)(nil),          // 6: user.v1.ListUsersResponse
-	(*timestamppb.Timestamp)(nil),      // 7: google.protobuf.Timestamp
+	(*Role)(nil),                       // 7: user.v1.Role
+	(*BatchGetRolesRequest)(nil),       // 8: user.v1.BatchGetRolesRequest
+	(*BatchGetRolesResponse)(nil),      // 9: user.v1.BatchGetRolesResponse
+	(*timestamppb.Timestamp)(nil),      // 10: google.protobuf.Timestamp
 }
 var file_user_v1_user_proto_depIdxs = []int32{
-	7, // 0: user.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	0, // 1: user.v1.GetUserResponse.user:type_name -> user.v1.User
-	0, // 2: user.v1.ListUsersResponse.users:type_name -> user.v1.User
-	1, // 3: user.v1.UserService.CreateOrganization:input_type -> user.v1.CreateOrganizationRequest
-	3, // 4: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
-	5, // 5: user.v1.UserService.ListUsers:input_type -> user.v1.ListUsersRequest
-	2, // 6: user.v1.UserService.CreateOrganization:output_type -> user.v1.CreateOrganizationResponse
-	4, // 7: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
-	6, // 8: user.v1.UserService.ListUsers:output_type -> user.v1.ListUsersResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	10, // 0: user.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 1: user.v1.GetUserResponse.user:type_name -> user.v1.User
+	0,  // 2: user.v1.ListUsersResponse.users:type_name -> user.v1.User
+	10, // 3: user.v1.Role.created_at:type_name -> google.protobuf.Timestamp
+	7,  // 4: user.v1.BatchGetRolesResponse.roles:type_name -> user.v1.Role
+	1,  // 5: user.v1.UserService.CreateOrganization:input_type -> user.v1.CreateOrganizationRequest
+	3,  // 6: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
+	5,  // 7: user.v1.UserService.ListUsers:input_type -> user.v1.ListUsersRequest
+	8,  // 8: user.v1.UserService.BatchGetRoles:input_type -> user.v1.BatchGetRolesRequest
+	2,  // 9: user.v1.UserService.CreateOrganization:output_type -> user.v1.CreateOrganizationResponse
+	4,  // 10: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResponse
+	6,  // 11: user.v1.UserService.ListUsers:output_type -> user.v1.ListUsersResponse
+	9,  // 12: user.v1.UserService.BatchGetRoles:output_type -> user.v1.BatchGetRolesResponse
+	9,  // [9:13] is the sub-list for method output_type
+	5,  // [5:9] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -526,7 +718,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

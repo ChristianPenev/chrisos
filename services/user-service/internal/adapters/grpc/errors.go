@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/ChristianPenev/chrisos/pkg/batch"
 	"github.com/ChristianPenev/chrisos/pkg/pagination"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/organization"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/role"
@@ -26,7 +27,8 @@ func toStatus(err error) error {
 		errors.Is(err, role.ErrInvalidName),
 		errors.Is(err, role.ErrUnknownPermission),
 		errors.Is(err, pagination.ErrInvalidPageSize),
-		errors.Is(err, pagination.ErrInvalidCursor):
+		errors.Is(err, pagination.ErrInvalidCursor),
+		errors.Is(err, batch.ErrTooManyIDs):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, user.ErrUserNotFound),
 		errors.Is(err, organization.ErrOrganizationNotFound),

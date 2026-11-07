@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	userv1 "github.com/ChristianPenev/chrisos/gen/go/user/v1"
+	"github.com/ChristianPenev/chrisos/pkg/batch"
 	"github.com/ChristianPenev/chrisos/pkg/pagination"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/command"
@@ -83,6 +84,29 @@ func (m *memoryStore) UsersByOrganization(_ context.Context, orgID organization.
 		return pagination.Page[query.UserView]{}, err
 	}
 	return pagination.Page[query.UserView]{Items: views, NextCursor: next}, nil
+}
+
+func (m *memoryStore) RolesByIDs(_ context.Context, ids []role.ID) ([]query.RoleView, error) {
+	var views []query.RoleView
+	for _, id := range ids {
+		r, ok := m.roles[id]
+		if !ok {
+			continue
+		}
+		var perms []string
+		for _, p := range r.Permissions() {
+			perms = append(perms, p.String())
+		}
+		views = append(views, query.RoleView{
+			ID:             r.ID().String(),
+			OrganizationID: r.OrganizationID().String(),
+			Name:           r.Name(),
+			Owner:          r.IsOwner(),
+			Permissions:    perms,
+			CreatedAt:      r.CreatedAt(),
+		})
+	}
+	return views, nil
 }
 
 func toView(u *user.User) query.UserView {
@@ -167,6 +191,7 @@ func newTestClient(t *testing.T, store *memoryStore) userv1.UserServiceClient {
 		Queries: application.Queries{
 			GetUser:   query.NewGetUserHandler(store),
 			ListUsers: query.NewListUsersHandler(store),
+			GetRoles:  query.NewGetRolesHandler(store),
 		},
 	}
 
@@ -338,6 +363,65 @@ func TestListUsers(t *testing.T) {
 			assertCode(t, err, codes.InvalidArgument)
 		})
 	}
+}
+
+func TestBatchGetRoles(t *testing.T) {
+	ctx := context.Background()
+	store := newMemoryStore()
+	client := newTestClient(t, store)
+
+	created, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
+		OrganizationName: "Acme", OwnerEmail: "owner@acme.com", OwnerFirstName: "Jane", OwnerLastName: "Doe",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner, err := client.GetUser(ctx, &userv1.GetUserRequest{Id: created.GetOwnerUserId()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ownerRoleID := owner.GetUser().GetRoleId()
+
+	t.Run("returns known roles and leaves out unknown IDs", func(t *testing.T) {
+		resp, err := client.BatchGetRoles(ctx, &userv1.BatchGetRolesRequest{
+			Ids: []string{ownerRoleID, role.NewID().String(), ownerRoleID},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(resp.GetRoles()) != 1 {
+			t.Fatalf("got %d roles, want 1", len(resp.GetRoles()))
+		}
+		r := resp.GetRoles()[0]
+		if r.GetId() != ownerRoleID || r.GetName() != role.OwnerRoleName || !r.GetOwner() ||
+			r.GetOrganizationId() != created.GetOrganizationId() || r.GetCreatedAt().AsTime().IsZero() {
+			t.Fatalf("got %+v", r)
+		}
+		if len(r.GetPermissions()) != len(role.AllPermissions()) {
+			t.Errorf("permissions = %v, want all", r.GetPermissions())
+		}
+	})
+
+	t.Run("empty request returns no roles", func(t *testing.T) {
+		resp, err := client.BatchGetRoles(ctx, &userv1.BatchGetRolesRequest{})
+		if err != nil || len(resp.GetRoles()) != 0 {
+			t.Fatalf("got %v, %v", resp, err)
+		}
+	})
+
+	t.Run("malformed ID is InvalidArgument", func(t *testing.T) {
+		_, err := client.BatchGetRoles(ctx, &userv1.BatchGetRolesRequest{Ids: []string{"nope"}})
+		assertCode(t, err, codes.InvalidArgument)
+	})
+
+	t.Run("too many IDs is InvalidArgument", func(t *testing.T) {
+		ids := make([]string, batch.MaxIDs+1)
+		for i := range ids {
+			ids[i] = role.NewID().String()
+		}
+		_, err := client.BatchGetRoles(ctx, &userv1.BatchGetRolesRequest{Ids: ids})
+		assertCode(t, err, codes.InvalidArgument)
+	})
 }
 
 func TestUnexpectedErrorsAreHidden(t *testing.T) {

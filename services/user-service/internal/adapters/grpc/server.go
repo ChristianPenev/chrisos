@@ -61,6 +61,26 @@ func (s *Server) ListUsers(ctx context.Context, req *userv1.ListUsersRequest) (*
 	return &userv1.ListUsersResponse{Users: users, NextPageToken: page.NextCursor}, nil
 }
 
+func (s *Server) BatchGetRoles(ctx context.Context, req *userv1.BatchGetRolesRequest) (*userv1.BatchGetRolesResponse, error) {
+	views, err := s.app.Queries.GetRoles.Handle(ctx, query.GetRoles{IDs: req.GetIds()})
+	if err != nil {
+		return nil, toStatus(err)
+	}
+
+	roles := make([]*userv1.Role, len(views))
+	for i, v := range views {
+		roles[i] = &userv1.Role{
+			Id:             v.ID,
+			OrganizationId: v.OrganizationID,
+			Name:           v.Name,
+			Owner:          v.Owner,
+			Permissions:    v.Permissions,
+			CreatedAt:      timestamppb.New(v.CreatedAt),
+		}
+	}
+	return &userv1.BatchGetRolesResponse{Roles: roles}, nil
+}
+
 func toProtoUser(v query.UserView) *userv1.User {
 	return &userv1.User{
 		Id:             v.ID,

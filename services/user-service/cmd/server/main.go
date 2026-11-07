@@ -60,6 +60,7 @@ func run() error {
 		Queries: application.Queries{
 			GetUser:   query.NewGetUserHandler(users),
 			ListUsers: query.NewListUsersHandler(users),
+			GetRoles:  query.NewGetRolesHandler(pgadapter.NewRoleReader(db)),
 		},
 	}
 

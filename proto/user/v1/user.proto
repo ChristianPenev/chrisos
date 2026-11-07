@@ -10,6 +10,7 @@ service UserService {
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc BatchGetRoles(BatchGetRolesRequest) returns (BatchGetRolesResponse);
 }
 
 message User {
@@ -51,4 +52,21 @@ message ListUsersRequest {
 message ListUsersResponse {
   repeated User users = 1;
   string next_page_token = 2;
+}
+
+message Role {
+  string id = 1;
+  string organization_id = 2;
+  string name = 3;
+  bool owner = 4;
+  repeated string permissions = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message BatchGetRolesRequest {
+  repeated string ids = 1;
+}
+
+message BatchGetRolesResponse {
+  repeated Role roles = 1;
 }
