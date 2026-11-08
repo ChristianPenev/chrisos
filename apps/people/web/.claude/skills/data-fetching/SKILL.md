@@ -66,12 +66,16 @@ Rules from the Next docs (`node_modules/next/dist/docs/01-app/01-getting-started
 - **Notice on status codes**: `notFound()` inside a Suspense boundary runs after the shell has
   streamed, so the response stays HTTP 200. Next swaps in `not-found.tsx` and adds
   `<meta name="robots" content="noindex">`. That's expected under Partial Prerendering.
-- **Cursor pagination ("Load more")**: render the first page on the server. Pass it as
-  `initialPage` to a `"use client"` list that holds the accumulated rows. That list fetches
-  further pages through a **server action** in `domains/<domain>/actions/` (`"use server"`,
-  calls the same data function). Model: `PaginatedUserList` + `loadOrganizationUsers`. The
-  browser never calls the API, so no client Apollo, CORS or public API URL is needed. Server
-  actions are public endpoints, so check argument types at runtime.
+- **Cursor pagination (paged table)**: render the first page on the server and pass it as
+  `initialPage` to a `"use client"` list. A hook (`useUserPages`) keeps the visited pages and
+  the current index. It fetches further pages through a **server action** in
+  `domains/<domain>/actions/` (`"use server"`, calls the same data function). It dedupes
+  requests per cursor and prefetches the next page, so Next is instant and Previous never
+  refetches. The API has forward cursors only and no total count. So the UI shows "Page N" and
+  a row range, and adds "of X" only once the last page has been reached. Don't fake page
+  numbers or totals. Model: `PaginatedUserList` + `useUserPages` + `loadOrganizationUsers`.
+  The browser never calls the API, so no client Apollo, CORS or public API URL is needed.
+  Server actions are public endpoints, so check argument types at runtime.
 - **Dates in client-rendered rows**: use `formatDate` from `@lib/formatDate` (fixed `UTC`
   zone). An `Intl` formatter without a `timeZone` renders differently on server and browser,
   which breaks hydration.
