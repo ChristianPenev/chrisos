@@ -1,0 +1,60 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.7"
+    import: ["@key", "@shareable"]
+  )
+
+directive @entityResolver(multi: Boolean) on OBJECT
+
+scalar Time
+
+type User @key(fields: "id") @entityResolver(multi: true) {
+  id: ID!
+  organizationId: ID!
+  roleId: ID!
+  email: String!
+  firstName: String!
+  lastName: String!
+  createdAt: Time!
+  role: Role!
+}
+
+type Role @key(fields: "id") @entityResolver(multi: true) {
+  id: ID!
+  organizationId: ID!
+  name: String!
+  isOwner: Boolean!
+  permissions: [String!]!
+  createdAt: Time!
+}
+
+input CreateOrganizationInput {
+  name: String!
+  ownerEmail: String!
+  ownerFirstName: String!
+  ownerLastName: String!
+}
+
+type CreateOrganizationPayload {
+  organizationId: ID!
+  owner: User!
+}
+
+type PageInfo @shareable {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type UserConnection {
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type Query {
+  user(id: ID!): User
+  users(organizationId: ID!, first: Int, after: String): UserConnection!
+}
+
+type Mutation {
+  createOrganization(input: CreateOrganizationInput!): CreateOrganizationPayload!
+}

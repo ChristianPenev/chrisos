@@ -8,3 +8,4 @@ proto:
 
 gql:
 	cd apps/people/api && go tool gqlgen generate
+	cd services/user-service && go tool gqlgen generate

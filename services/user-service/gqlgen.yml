@@ -1,0 +1,31 @@
+omit_gqlgen_file_notice: true
+
+schema:
+  - schema/*.graphqls
+
+exec:
+  package: generated
+  layout: single-file
+  filename: internal/adapters/graphql/generated/generated.go
+
+federation:
+  package: generated
+  filename: internal/adapters/graphql/generated/federation.go
+  version: 2
+
+model:
+  package: model
+  filename: internal/adapters/graphql/model/models_gen.go
+
+resolver:
+  package: graphql
+  layout: follow-schema
+  dir: internal/adapters/graphql
+  filename_template: "{name}.resolvers.go"
+  omit_template_comment: true
+
+models:
+  User:
+    fields:
+      role:
+        resolver: true
