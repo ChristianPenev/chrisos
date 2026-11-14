@@ -28,7 +28,7 @@ WORKDIR /app
 
 COPY --from=builder /user-service ./user-service
 
-EXPOSE 9090
+EXPOSE 9090 8080
 
 USER 10001:10001
 
