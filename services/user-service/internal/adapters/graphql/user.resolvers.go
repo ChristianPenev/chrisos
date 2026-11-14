@@ -2,8 +2,8 @@ package graphql
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/ChristianPenev/chrisos/pkg/dataloader"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/graphql/generated"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/graphql/model"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/command"
@@ -53,7 +53,11 @@ func (r *queryResolver) Users(ctx context.Context, organizationID string, first 
 }
 
 func (r *userResolver) Role(ctx context.Context, obj *model.User) (*model.Role, error) {
-	panic(fmt.Errorf("not implemented: Role - role"))
+	v, err := dataloader.For[*Loaders](ctx).Roles.Load(ctx, obj.RoleID)
+	if err != nil {
+		return nil, err
+	}
+	return toRole(v), nil
 }
 
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }

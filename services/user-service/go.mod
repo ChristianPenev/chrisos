@@ -17,6 +17,10 @@ require (
 
 require (
 	github.com/agnivade/levenshtein v1.2.2 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/coder/websocket v1.8.15 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.3 // indirect
@@ -26,6 +30,9 @@ require (
 	github.com/pressly/goose/v3 v3.29.0 // indirect
 	github.com/sethvargo/go-retry v0.5.0 // indirect
 	github.com/sosodev/duration v1.4.0 // indirect
+	github.com/vikstrous/dataloadgen v0.0.10 // indirect
+	go.opentelemetry.io/otel v1.47.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect

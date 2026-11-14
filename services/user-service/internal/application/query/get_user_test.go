@@ -16,11 +16,26 @@ type fakeReader struct {
 	gotOrg organization.ID
 	gotReq pagination.Request
 	page   pagination.Page[UserView]
+
+	calls  int
+	gotIDs []user.ID
 }
 
 func (f *fakeReader) UsersByOrganization(_ context.Context, orgID organization.ID, req pagination.Request) (pagination.Page[UserView], error) {
 	f.gotOrg, f.gotReq = orgID, req
 	return f.page, nil
+}
+
+func (f *fakeReader) UsersByIDs(_ context.Context, ids []user.ID) ([]UserView, error) {
+	f.calls++
+	f.gotIDs = ids
+	var views []UserView
+	for _, id := range ids {
+		if v, ok := f.views[id]; ok {
+			views = append(views, v)
+		}
+	}
+	return views, nil
 }
 
 func (f *fakeReader) UserByID(_ context.Context, id user.ID) (UserView, error) {

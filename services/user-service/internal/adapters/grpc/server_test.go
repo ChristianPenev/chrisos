@@ -57,6 +57,16 @@ func (m *memoryStore) UserByID(_ context.Context, id user.ID) (query.UserView, e
 	return toView(u), nil
 }
 
+func (m *memoryStore) UsersByIDs(_ context.Context, ids []user.ID) ([]query.UserView, error) {
+	var views []query.UserView
+	for _, id := range ids {
+		if u, ok := m.users[id]; ok {
+			views = append(views, toView(u))
+		}
+	}
+	return views, nil
+}
+
 func (m *memoryStore) UsersByOrganization(_ context.Context, orgID organization.ID, req pagination.Request) (pagination.Page[query.UserView], error) {
 	after := ""
 	if req.After != "" {

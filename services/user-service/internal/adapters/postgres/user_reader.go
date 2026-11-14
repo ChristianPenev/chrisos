@@ -37,6 +37,24 @@ func (r *UserReader) UserByID(ctx context.Context, id user.ID) (query.UserView, 
 	return rec.toView(), nil
 }
 
+func (r *UserReader) UsersByIDs(ctx context.Context, ids []user.ID) ([]query.UserView, error) {
+	keys := make([]uuid.UUID, len(ids))
+	for i, id := range ids {
+		keys[i] = uuid.UUID(id)
+	}
+
+	var recs []userRecord
+	if err := r.db.WithContext(ctx).Where("id IN ?", keys).Find(&recs).Error; err != nil {
+		return nil, err
+	}
+
+	views := make([]query.UserView, len(recs))
+	for i, rec := range recs {
+		views[i] = rec.toView()
+	}
+	return views, nil
+}
+
 func (r *UserReader) UsersByOrganization(ctx context.Context, organizationID organization.ID, req pagination.Request) (pagination.Page[query.UserView], error) {
 	recs, err := pgshared.Keyset(
 		r.db.WithContext(ctx).Where("organization_id = ?", uuid.UUID(organizationID)),

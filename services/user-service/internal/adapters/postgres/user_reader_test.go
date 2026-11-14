@@ -23,6 +23,16 @@ func TestUserReader(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Run("UsersByIDs returns found users and skips unknown IDs", func(t *testing.T) {
+		views, err := reader.UsersByIDs(ctx, []user.ID{jane.ID(), user.NewID()})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(views) != 1 || views[0].ID != jane.ID().String() || views[0].Email != jane.Email().String() {
+			t.Fatalf("got %+v", views)
+		}
+	})
+
 	t.Run("UserByID returns the view", func(t *testing.T) {
 		v, err := reader.UserByID(ctx, jane.ID())
 		if err != nil {
