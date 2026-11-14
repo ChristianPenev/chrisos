@@ -6,18 +6,50 @@ import (
 
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/graphql/generated"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/graphql/model"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/command"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/query"
 )
 
 func (r *mutationResolver) CreateOrganization(ctx context.Context, input model.CreateOrganizationInput) (*model.CreateOrganizationPayload, error) {
-	panic(fmt.Errorf("not implemented: CreateOrganization - createOrganization"))
+	created, err := r.app.Commands.CreateOrganization.Handle(ctx, command.CreateOrganization{
+		Name:      input.Name,
+		Email:     input.OwnerEmail,
+		FirstName: input.OwnerFirstName,
+		LastName:  input.OwnerLastName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	owner, err := r.app.Queries.GetUser.Handle(ctx, query.GetUser{ID: created.UserID.String()})
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.CreateOrganizationPayload{
+		OrganizationID: created.OrganizationID.String(),
+		Owner:          toUser(owner),
+	}, nil
 }
 
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	v, err := r.app.Queries.GetUser.Handle(ctx, query.GetUser{ID: id})
+	if err != nil {
+		return nil, err
+	}
+	return toUser(v), nil
 }
 
 func (r *queryResolver) Users(ctx context.Context, organizationID string, first *int, after *string) (*model.UserConnection, error) {
-	panic(fmt.Errorf("not implemented: Users - users"))
+	page, err := r.app.Queries.ListUsers.Handle(ctx, query.ListUsers{
+		OrganizationID: organizationID,
+		PageSize:       valueOr(first, 0),
+		PageToken:      valueOr(after, ""),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toUserConnection(page), nil
 }
 
 func (r *userResolver) Role(ctx context.Context, obj *model.User) (*model.Role, error) {
