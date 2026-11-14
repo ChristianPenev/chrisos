@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"slices"
-	"strings"
 	"testing"
 
 	grpclib "google.golang.org/grpc"
@@ -17,7 +16,7 @@ import (
 
 	userv1 "github.com/ChristianPenev/chrisos/gen/go/user/v1"
 	"github.com/ChristianPenev/chrisos/pkg/batch"
-	"github.com/ChristianPenev/chrisos/pkg/pagination"
+	"github.com/ChristianPenev/chrisos/services/user-service/internal/adapters/memory"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/command"
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/application/query"
@@ -26,180 +25,14 @@ import (
 	"github.com/ChristianPenev/chrisos/services/user-service/internal/domain/user"
 )
 
-type memoryStore struct {
-	orgs      map[organization.ID]*organization.Organization
-	roles     map[role.ID]*role.Role
-	users     map[user.ID]*user.User
-	createErr error
-}
-
-func newMemoryStore() *memoryStore {
-	return &memoryStore{
-		orgs:  map[organization.ID]*organization.Organization{},
-		roles: map[role.ID]*role.Role{},
-		users: map[user.ID]*user.User{},
-	}
-}
-
-func (m *memoryStore) WithinTransaction(_ context.Context, fn func(command.Repositories) error) error {
-	return fn(command.Repositories{
-		Organizations: memoryOrganizations{m},
-		Roles:         memoryRoles{m},
-		Users:         memoryUsers{m},
-	})
-}
-
-func (m *memoryStore) UserByID(_ context.Context, id user.ID) (query.UserView, error) {
-	u, ok := m.users[id]
-	if !ok {
-		return query.UserView{}, user.ErrUserNotFound
-	}
-	return toView(u), nil
-}
-
-func (m *memoryStore) UsersByIDs(_ context.Context, ids []user.ID) ([]query.UserView, error) {
-	var views []query.UserView
-	for _, id := range ids {
-		if u, ok := m.users[id]; ok {
-			views = append(views, toView(u))
-		}
-	}
-	return views, nil
-}
-
-func (m *memoryStore) UsersByOrganization(_ context.Context, orgID organization.ID, req pagination.Request) (pagination.Page[query.UserView], error) {
-	after := ""
-	if req.After != "" {
-		key, err := pagination.DecodeCursor[map[string]string](req.After)
-		if err != nil {
-			return pagination.Page[query.UserView]{}, err
-		}
-		after = key["id"]
-	}
-
-	var views []query.UserView
-	for _, u := range m.users {
-		if u.OrganizationID() == orgID && u.ID().String() > after {
-			views = append(views, toView(u))
-		}
-	}
-	slices.SortFunc(views, func(a, b query.UserView) int { return strings.Compare(a.ID, b.ID) })
-
-	if len(views) <= req.Size {
-		return pagination.Page[query.UserView]{Items: views}, nil
-	}
-	views = views[:req.Size]
-	next, err := pagination.EncodeCursor(map[string]string{"id": views[len(views)-1].ID})
-	if err != nil {
-		return pagination.Page[query.UserView]{}, err
-	}
-	return pagination.Page[query.UserView]{Items: views, NextCursor: next}, nil
-}
-
-func (m *memoryStore) RolesByIDs(_ context.Context, ids []role.ID) ([]query.RoleView, error) {
-	var views []query.RoleView
-	for _, id := range ids {
-		r, ok := m.roles[id]
-		if !ok {
-			continue
-		}
-		var perms []string
-		for _, p := range r.Permissions() {
-			perms = append(perms, p.String())
-		}
-		views = append(views, query.RoleView{
-			ID:             r.ID().String(),
-			OrganizationID: r.OrganizationID().String(),
-			Name:           r.Name(),
-			Owner:          r.IsOwner(),
-			Permissions:    perms,
-			CreatedAt:      r.CreatedAt(),
-		})
-	}
-	return views, nil
-}
-
-func toView(u *user.User) query.UserView {
-	return query.UserView{
-		ID:             u.ID().String(),
-		OrganizationID: u.OrganizationID().String(),
-		RoleID:         u.RoleID().String(),
-		Email:          u.Email().String(),
-		FirstName:      u.FirstName(),
-		LastName:       u.LastName(),
-		CreatedAt:      u.CreatedAt(),
-	}
-}
-
-type memoryOrganizations struct{ m *memoryStore }
-
-func (r memoryOrganizations) Create(_ context.Context, o *organization.Organization) error {
-	r.m.orgs[o.ID()] = o
-	return nil
-}
-
-func (r memoryOrganizations) FindByID(_ context.Context, id organization.ID) (*organization.Organization, error) {
-	o, ok := r.m.orgs[id]
-	if !ok {
-		return nil, organization.ErrOrganizationNotFound
-	}
-	return o, nil
-}
-
-type memoryRoles struct{ m *memoryStore }
-
-func (r memoryRoles) Create(_ context.Context, ro *role.Role) error {
-	r.m.roles[ro.ID()] = ro
-	return nil
-}
-
-func (r memoryRoles) FindByID(_ context.Context, id role.ID) (*role.Role, error) {
-	ro, ok := r.m.roles[id]
-	if !ok {
-		return nil, role.ErrRoleNotFound
-	}
-	return ro, nil
-}
-
-type memoryUsers struct{ m *memoryStore }
-
-func (r memoryUsers) Create(_ context.Context, u *user.User) error {
-	if r.m.createErr != nil {
-		return r.m.createErr
-	}
-	for _, existing := range r.m.users {
-		if existing.Email() == u.Email() {
-			return user.ErrEmailAlreadyExists
-		}
-	}
-	r.m.users[u.ID()] = u
-	return nil
-}
-
-func (r memoryUsers) FindByID(_ context.Context, id user.ID) (*user.User, error) {
-	u, ok := r.m.users[id]
-	if !ok {
-		return nil, user.ErrUserNotFound
-	}
-	return u, nil
-}
-
-func (r memoryUsers) FindByEmail(_ context.Context, email user.Email) (*user.User, error) {
-	for _, u := range r.m.users {
-		if u.Email() == email {
-			return u, nil
-		}
-	}
-	return nil, user.ErrUserNotFound
-}
-
-func newTestClient(t *testing.T, store *memoryStore) userv1.UserServiceClient {
+func newTestClient(t *testing.T, store *memory.Store) userv1.UserServiceClient {
 	t.Helper()
 
 	app := application.Application{
 		Commands: application.Commands{CreateOrganization: command.NewCreateOrganizationHandler(store)},
 		Queries: application.Queries{
 			GetUser:   query.NewGetUserHandler(store),
+			GetUsers:  query.NewGetUsersHandler(store),
 			ListUsers: query.NewListUsersHandler(store),
 			GetRoles:  query.NewGetRolesHandler(store),
 		},
@@ -232,7 +65,7 @@ func assertCode(t *testing.T, err error, want codes.Code) {
 
 func TestUserServiceServer(t *testing.T) {
 	ctx := context.Background()
-	store := newMemoryStore()
+	store := memory.NewStore()
 	client := newTestClient(t, store)
 
 	created, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
@@ -260,7 +93,7 @@ func TestUserServiceServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if r, ok := store.roles[roleID]; !ok || !r.IsOwner() {
+		if r, ok := store.Role(roleID); !ok || !r.IsOwner() {
 			t.Errorf("role_id %q is not the owner role", u.GetRoleId())
 		}
 	})
@@ -299,7 +132,7 @@ func TestUserServiceServer(t *testing.T) {
 
 func TestListUsers(t *testing.T) {
 	ctx := context.Background()
-	store := newMemoryStore()
+	store := memory.NewStore()
 	client := newTestClient(t, store)
 
 	acme, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
@@ -328,7 +161,9 @@ func TestListUsers(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		store.users[u.ID()] = u
+		if err := store.Repositories().Users.Create(ctx, u); err != nil {
+			t.Fatal(err)
+		}
 		want = append(want, u.ID().String())
 	}
 	slices.Sort(want)
@@ -377,7 +212,7 @@ func TestListUsers(t *testing.T) {
 
 func TestBatchGetRoles(t *testing.T) {
 	ctx := context.Background()
-	store := newMemoryStore()
+	store := memory.NewStore()
 	client := newTestClient(t, store)
 
 	created, err := client.CreateOrganization(ctx, &userv1.CreateOrganizationRequest{
@@ -435,8 +270,8 @@ func TestBatchGetRoles(t *testing.T) {
 }
 
 func TestUnexpectedErrorsAreHidden(t *testing.T) {
-	store := newMemoryStore()
-	store.createErr = errors.New("connection refused to db-host:5432")
+	store := memory.NewStore()
+	store.UserCreateErr = errors.New("connection refused to db-host:5432")
 	client := newTestClient(t, store)
 
 	_, err := client.CreateOrganization(context.Background(), &userv1.CreateOrganizationRequest{
